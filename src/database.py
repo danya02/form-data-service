@@ -46,3 +46,13 @@ class User(MyModel):
         super().__init__(*args, **kwargs)
         if 'password' in kwargs:
             self.set_password(kwargs['password'])
+
+
+# At the very end of the file, reset the database connection.
+# Otherwise, the very first request will fail with an peewee.OperationalError: Connection already opened.
+try:
+    db.connect()
+except pw.OperationalError: pass
+try:
+    db.close()
+except: pass
