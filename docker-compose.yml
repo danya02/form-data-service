@@ -1,0 +1,14 @@
+version: "3.3"
+services:
+ forms:
+  build: .
+  expose: ["80"]
+  volumes:
+    - ./src:/var/www/app
+    - ./static:/var/www/app/static
+    - ./templates:/var/www/app/templates
+  labels:
+   - "traefik.enable=true"
+   - "traefik.http.routers.blesk-tag.rule=HostRegexp(`forms.{domain:[a-zA-Z0-9-]+}.{tld:[a-zA-Z0-9-]+}`)"
+   - "traefik.http.routers.blesk-tag.entrypoints=websecure"
+   - "traefik.http.routers.blesk-tag.tls.certresolver=myresolver"
