@@ -3,6 +3,8 @@ services:
  forms:
   build: .
   expose: ["80"]
+  ports:
+    - "8080:80"
   volumes:
     - ./src:/app
   labels:

@@ -10,13 +10,32 @@ class MyModel(pw.Model):
         database = db
 
 def create_table(cls):
-    db.connect()
     db.create_tables([cls])
     return cls
 
 @create_table
+class FlaskSecretKey(MyModel):
+    secret_key = pw.BlobField()
+    created_at = pw.DateTimeField(default=pw.datetime.datetime.now)
+
+    @classmethod
+    def get_current(cls):
+        latest = cls.select().get_or_none()
+        if latest is None:
+            latest = cls.create(secret_key=secrets.token_bytes(64))
+            return latest.secret_key
+        else:
+            if latest.created_at < pw.datetime.datetime.now() - pw.datetime.timedelta(days=7):
+                cls.delete().execute()
+                latest = cls.create(secret_key=secrets.token_bytes(64))
+                return latest.secret_key
+            else:
+                return latest.secret_key
+
+@create_table
 class User(MyModel):
     email = pw.CharField(unique=True)
+    name = pw.CharField()
     password_scrypt_hash = pw.BlobField()
     password_scrypt_salt = pw.BlobField()
     password_scrypt_n = pw.IntegerField(default=16384)
@@ -50,9 +69,5 @@ class User(MyModel):
 
 # At the very end of the file, reset the database connection.
 # Otherwise, the very first request will fail with an peewee.OperationalError: Connection already opened.
-try:
-    db.connect()
-except pw.OperationalError: pass
-try:
-    db.close()
+try: db.close()
 except: pass
