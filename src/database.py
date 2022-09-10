@@ -66,6 +66,24 @@ class User(MyModel):
         if 'password' in kwargs:
             self.set_password(kwargs['password'])
 
+@create_table
+class Project(MyModel):
+    """A project is a collection of forms that are a part of the same site."""
+    slug = pw.CharField(unique=True, default=lambda: secrets.token_hex(16))  # This is the identifier that should be used everywhere user-facing; the default ID is still included for query performance, but only ever show the slug in web pages.
+    name = pw.CharField()
+    description = pw.TextField(default='')
+    owner = pw.ForeignKeyField(User, backref='projects', on_delete='RESTRICT')  # Users must transfer or delete their projects before deleting their account.
+    created_at = pw.DateTimeField(default=pw.datetime.datetime.now)
+
+@create_table
+class ProjectUser(MyModel):
+    """
+    A mapping between projects and users that are part of them.
+    Even if not included, the owner of the project is a user of the project.
+    """
+    project = pw.ForeignKeyField(Project, backref='users', on_delete='CASCADE')
+    user = pw.ForeignKeyField(User, backref='projects', on_delete='CASCADE')
+
 
 # At the very end of the file, reset the database connection.
 # Otherwise, the very first request will fail with an peewee.OperationalError: Connection already opened.

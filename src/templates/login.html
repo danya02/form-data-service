@@ -41,31 +41,40 @@
                     {% with messages = get_flashed_messages() %}
                         {% if messages %}
                             {% for message in messages %}
-                                <div class="alert alert-danger" role="alert">
                                     {% if message == 'login-error' %}
+                                    <div class="alert alert-danger" role="alert">
                                         Invalid email or password.
+                                    </div>
                                     {% elif message == 'login-required' %}
+                                    <div class="alert alert-warning" role="alert">
                                         You must be logged in to do that.
-                                    {% elif message == 'form-error' %}
-                                        We could not read the data in your login form. Perhaps the site is being updated. Try entering your login again.
+                                    </div>
                                     {% endif %}
-                                </div>
                             {% endfor %}
                         {% endif %}
                     {% endwith %}
+                    {% if form.errors %}
+                    <div class="alert alert-warning" role="alert">
+                        Errors in the form:
+                        <ul>
+                        {% for field_name, field_errors in form.errors|dictsort if field_errors %}
+                                <li>{{ form[field_name].label }}: {{ field_errors }}</li>
+                        {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
 
                     <form method="post" action="/login">
                         <div class="form-floating mb-3">
-                            <input type="email" class="form-control rounded-3" id="email" name="email" placeholder="alice@example.com">
-                            <label for="email">Email</label>
-
+                            {{ form.email(class_="form-control rounded-3") }}
+                            {{ form.email.label }}
                         </div>
                         <div class="form-floating mb-3">
-                            <input type="password" class="form-control rounded-3" id="password" name="password" placeholder="Password">
-                            <label for="password">Password</label>
+                            {{ form.password(class_="form-control rounded-3") }}
+                            {{ form.password.label }}
                         </div>
 
-                        <input type="hidden" name="next" value="{{ next }}">
+                        {{ form.hidden_tag() }}
 
                         <button type="submit" class="w-100 mb-2 btn btn-lg rounded-3 btn-primary">Login</button>
                     </form>

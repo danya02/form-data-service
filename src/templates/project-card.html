@@ -1,0 +1,7 @@
+<div class="card mb-3">
+    <div class="card-body">
+        <h5 class="card-title">{{ project.name }}</h5>
+        <p class="card-text">{{ project.description or 'No project description' }}</p>
+        <a href="{{ url_for('projects.view', slug=project.slug) }}" class="btn btn-primary stretched-link">Open project</a>
+    </div>
+</div>
