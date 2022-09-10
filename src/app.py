@@ -30,7 +30,7 @@ def after_request(response):
 register_blueprints_on_app(app)
 
 class LoginForm(FlaskForm):
-    email = EmailField('Email', validators=[DataRequired(), Email()], render_kw={'placeholder': 'alice@example.com'})
+    email = EmailField('Email', validators=[DataRequired()], render_kw={'placeholder': 'alice@example.com'})
     password = PasswordField('Password', validators=[DataRequired()], render_kw={'placeholder': 'passw0rd'})
     next = HiddenField(default='/')
 
@@ -58,4 +58,4 @@ def login():
 @app.route('/logout')
 def logout():
     session.clear()
-    return redirect(url_for('index'))
+    return redirect(url_for('login'))

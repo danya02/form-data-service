@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Project {{project.name}}{% endblock %}
 {% block content %}
-    <div class="row mb-2 gy-4">
+    <div class="row mb-2">
         <div class="col">
             <h1 style="display:inline-block">{{project.name}}</h1>
             <a class="btn btn-primary btn-sm h1" data-bs-toggle="collapse" href="#titleEditCollapse" role="button" aria-expanded="false" aria-controls="titleEditCollapse">
@@ -54,6 +54,13 @@
                         </div>
                         <div class="modal-footer" style="display: block;">
                             <p>Enter the project's name, <b>{{project.name}}</b>, to confirm:</p>
+                            <form action="{{ url_for('projects.api_leave_project', slug=project.slug) }}" method="POST">
+                                {{ leave_form.csrf_token }}
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="leaveProjectInput" placeholder="Project name" autocomplete="off">
+                                    <button id="leaveProjectButton" type="submit" disabled="yes" class="btn btn-outline-danger">Leave project</button>
+                                </div>
+                            </form>
                             <script>
                                 document.getElementById("leaveProjectInput").addEventListener("input", function() {
                                     if (this.value == "{{project.name}}") {
@@ -67,15 +74,6 @@
                                     }
                                 });
                             </script>
-
-
-                            <form action="{{ url_for('projects.api_leave_project', slug=project.slug) }}" method="POST">
-                                {{ leave_form.csrf_token }}
-                                <div class="input-group">
-                                    <input type="text" class="form-control" id="leaveProjectInput" placeholder="Project name" autocomplete="off">
-                                    <button id="leaveProjectButton" type="submit" disabled="yes" class="btn btn-outline-danger">Leave project</button>
-                                </div>
-                            </form>
                         </div>
                     </div>
                 </div>
@@ -102,6 +100,13 @@
                             </div>
                             <div class="modal-footer" style="display: block;">
                                 <p>Enter the project's name, <b>{{project.name}}</b>, to confirm:</p>
+                                <form method="POST" action="{{ url_for('projects.api_delete_project', slug=project.slug) }}">
+                                    {{ delete_form.csrf_token }}
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="deleteProjectInput" placeholder="Project name" autocomplete="off">
+                                        <button id="deleteProjectButton" type="submit" disabled="yes" class="btn btn-outline-danger">Delete project</button>
+                                    </div>
+                                </form>
                                 <script>
                                     document.getElementById("deleteProjectInput").addEventListener("input", function() {
                                         if (this.value == "{{project.name}}") {
@@ -115,13 +120,6 @@
                                         }
                                     });
                                 </script>
-                                <form method="POST" action="{{ url_for('projects.api_delete_project', slug=project.slug) }}">
-                                    {{ delete_form.csrf_token }}
-                                    <div class="input-group">
-                                        <input type="text" class="form-control" id="deleteProjectInput" placeholder="Project name" autocomplete="off">
-                                        <button id="deleteProjectButton" type="submit" disabled="yes" class="btn btn-outline-danger">Delete project</button>
-                                    </div>
-                                </form>
                             </div>
                         </div>
                     </div>
@@ -140,6 +138,16 @@
                 Project name update failed.
             {% elif message == 'description-updated' %}
                 Description successfully updated.
+            {% elif message == 'add-user-not-found' %}
+                Could not add user with this email address because it does not exist.
+            {% elif message == 'add-not-owner' %}
+                You cannot add users to this project because you are not the owner of this project.
+            {% elif message == 'add-ok' %}
+                Added user to project OK.
+            {% elif message == 'remove-ok' %}
+                Removed user from project OK.
+            {% elif message == 'remove-not-owner' %}
+                You cannot remove users from this project because you are not its owner. You can leave the project by deleting it.
             {% else %}
                 Unknown status: <code>{{message}}</code>
             {% endif %}
@@ -147,7 +155,7 @@
         </div>
     {% endfor %}
 
-    <div class="row mb-2 gy-4">
+    <div class="row mb-2">
         <div class="col">
             <form action="{{ url_for('projects.api_update_description', slug=project.slug) }}" method="POST">
                 {{ description_edit_form.csrf_token }}
@@ -156,6 +164,68 @@
                     <button type="submit" class="btn btn-warning">Update</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+
+    <div class="row mb-2">
+        <div class="row">
+            <button type="button" class="btn btn-success" data-bs-toggle="collapse" data-bs-target="#projectMembersCollapse">
+                {{ project_members|length }} project members...
+            </button>
+        </div>
+    </div>
+    <div class="row mb-2">
+        <div class="row">
+            <div class="collapse" id="projectMembersCollapse">
+                <div class="card card-body">
+                    {% for member in project_members %}
+                        <div class="row mb-1">
+                            <div class="col input-group">
+                                <input type="text" class="form-control" value="{{member.name}} ({{member.email}})" readonly>
+                                <button type="button" class="btn btn-danger" data-bs-toggle="collapse" data-bs-target="#removeMemberCollapse-{{ member.id }}">
+                                    <i class="bi bi-person-x-fill" aria-label="Delete member {{member.name}}"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="card card-body collapse mb-1" id="removeMemberCollapse-{{ member.id }}">
+                            <p>Are you sure you want to remove <b>{{ member.name }}</b> from this project?</p>
+                            <p>Here's what will happen:</p>
+                            <ul>
+                                <li><b>{{ member.name }}</b> will lose access to the project's forms and their data.</li>
+                                <li><b>{{ member.name }}</b> will no longer be able to create or edit any new forms in this project.</li>
+                                <li><b>{{ member.name }}</b> <i>will</i> be able to create their own projects and forms.</li>
+                            </ul>
+                            <p>You can add <b>{{ member.name }}</b> back to this project at any time.</p>
+                            <div class="row">
+                                <div class="col">
+                                    <form action="{{ url_for('projects.api_remove_member', slug=project.slug, user_id=member.id) }}" method="POST">
+                                        {{ remove_member_form.csrf_token }}
+                                        <div class="d-grid">
+                                            <button type="submit" class="btn btn-danger">
+                                                Delete member <b>{{ member.name }}</b>
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+
+                    <div class="row">
+                        <form action="{{ url_for('projects.api_add_member', slug=project.slug) }}" method="POST">
+                            {{ add_member_form.csrf_token }}
+                            <div class="input-group">
+                                {{ add_member_form.email(class="form-control", placeholder="Member's email") }}
+                                <button type="submit" class="btn btn-success">
+                                    <i class="bi bi-person-plus-fill" aria-label="Add member"></i>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 {% endblock %}
