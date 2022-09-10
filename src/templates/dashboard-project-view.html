@@ -1,52 +1,161 @@
 {% extends "base.html" %}
 {% block title %}Project {{project.name}}{% endblock %}
 {% block content %}
-    <div class="container">
-        <div class="row mb-2 gy-4">
-            <div class="col">
-                <h1 style="display:inline-block">{{project.name}}</h1>
-                <a class="btn btn-primary btn-sm h1" data-bs-toggle="collapse" href="#titleEditCollapse" role="button" aria-expanded="false" aria-controls="titleEditCollapse">
-                    <i class="bi bi-pencil-square" aria-label="Edit name"></i>
-                </a>
-                <div class="collapse" id="titleEditCollapse">
-                    <div class="card card-body">
-                        <p class="card-text">Edit the name of the project:</p>
-                        <form action="{{ url_for('projects.api_update_name', slug=project.slug) }}" method="POST">
-                            {{ name_edit_form.csrf_token }}
-                            <div class="input-group">
-                                {{ name_edit_form.name(class="form-control") }}
-                                <button type="submit" class="btn btn-warning">Update</button>
-                            </div>
-                        </form>
+    <div class="row mb-2 gy-4">
+        <div class="col">
+            <h1 style="display:inline-block">{{project.name}}</h1>
+            <a class="btn btn-primary btn-sm h1" data-bs-toggle="collapse" href="#titleEditCollapse" role="button" aria-expanded="false" aria-controls="titleEditCollapse">
+                <i class="bi bi-pencil-square" aria-label="Edit name"></i>
+            </a>
+            <button class="btn btn-danger btn-sm h1" data-bs-toggle="collapse" data-bs-target="#deleteProjectFirstCollapse">
+                <i class="bi bi-trash" aria-label="Delete project"></i>
+            </button>
+
+            <div class="collapse" id="titleEditCollapse">
+                <div class="card card-body">
+                    <p class="card-text">Edit the name of the project:</p>
+                    <form action="{{ url_for('projects.api_update_name', slug=project.slug) }}" method="POST">
+                        {{ name_edit_form.csrf_token }}
+                        <div class="input-group">
+                            {{ name_edit_form.name(class="form-control") }}
+                            <button type="submit" class="btn btn-warning">Update</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="collapse" id="deleteProjectFirstCollapse">
+                <div class="card card-body">
+                    {% if g.user == project.owner %}
+                        <p class="card-text">You are the owner of this project and you can delete it.</p>
+                        <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteProjectModal">
+                            Delete project
+                        </button>
+                    {% else %}
+                        <p class="card-text">You are a member of this project, and you can leave it.</p>
+                        <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#leaveProjectModal">
+                            Leave project
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if g.user != project.owner %}
+            <div class="modal fade" id="leaveProjectModal" tabindex="-1" aria-labelledby="leaveProjectModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="leaveProjectModalLabel">Leave project</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>Are you sure you want to leave this project? You will lose access to it unless you are added to this project again.</p>
+                            <p>This action cannot be undone.</p>
+                        </div>
+                        <div class="modal-footer" style="display: block;">
+                            <p>Enter the project's name, <b>{{project.name}}</b>, to confirm:</p>
+                            <script>
+                                document.getElementById("leaveProjectInput").addEventListener("input", function() {
+                                    if (this.value == "{{project.name}}") {
+                                        document.getElementById("leaveProjectButton").disabled = false;
+                                        document.getElementById("leaveProjectButton").classList.remove("btn-outline-danger");
+                                        document.getElementById("leaveProjectButton").classList.add("btn-danger");
+                                    } else {
+                                        document.getElementById("leaveProjectButton").disabled = true;
+                                        document.getElementById("leaveProjectButton").classList.add("btn-outline-danger");
+                                        document.getElementById("leaveProjectButton").classList.remove("btn-danger");
+                                    }
+                                });
+                            </script>
+
+
+                            <form action="{{ url_for('projects.api_leave_project', slug=project.slug) }}" method="POST">
+                                {{ leave_form.csrf_token }}
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="leaveProjectInput" placeholder="Project name" autocomplete="off">
+                                    <button id="leaveProjectButton" type="submit" disabled="yes" class="btn btn-outline-danger">Leave project</button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-        {% for category, message in get_flashed_messages(with_categories=true) %}
-            <div class="alert alert-{{category}} alert-dismissible fade show" role="alert">
-                {% if message == 'project-name-updated' %}
-                    Project name successfully updated.
-                {% elif message == 'project-name-update-error' %}
-                    Project name update failed.
-                {% elif message == 'description-updated' %}
-                    Description successfully updated.
-                {% else %}
-                    Unknown status: <code>{{message}}</code>
-                {% endif %}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        {% endfor %}
+            {% else %}
 
-        <div class="row mb-2 gy-4">
-            <div class="col">
-                <form action="{{ url_for('projects.api_update_description', slug=project.slug) }}" method="POST">
-                    {{ description_edit_form.csrf_token }}
-                    <div class="input-group">
-                        {{ description_edit_form.description(class="form-control", rows=3, placeholder="Description") }}
-                        <button type="submit" class="btn btn-warning">Update</button>
+
+                <div class="modal fade" id="deleteProjectModal" tabindex="-1" aria-labelledby="deleteProjectModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="deleteProjectModalLabel">Delete project</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p>Are you sure you want to delete this project?</p>
+                                <p>Here's what will happen:</p>
+                                <ul>
+                                    <li>All 0 forms associated with this project will stop working.</li>
+                                    <li>A total of 0 data records from 0 forms will be permanently deleted (make sure you exported any important data).</li>
+                                    <li>You and 0 project members will lose access to the project's data.</li>
+                                </ul>
+                                <p>This action cannot be undone.</p>
+                            </div>
+                            <div class="modal-footer" style="display: block;">
+                                <p>Enter the project's name, <b>{{project.name}}</b>, to confirm:</p>
+                                <script>
+                                    document.getElementById("deleteProjectInput").addEventListener("input", function() {
+                                        if (this.value == "{{project.name}}") {
+                                            document.getElementById("deleteProjectButton").disabled = false;
+                                            document.getElementById("deleteProjectButton").classList.remove("btn-outline-danger");
+                                            document.getElementById("deleteProjectButton").classList.add("btn-danger");
+                                        } else {
+                                            document.getElementById("deleteProjectButton").disabled = true;
+                                            document.getElementById("deleteProjectButton").classList.remove("btn-danger");
+                                            document.getElementById("deleteProjectButton").classList.add("btn-outline-danger");
+                                        }
+                                    });
+                                </script>
+                                <form method="POST" action="{{ url_for('projects.api_delete_project', slug=project.slug) }}">
+                                    {{ delete_form.csrf_token }}
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="deleteProjectInput" placeholder="Project name" autocomplete="off">
+                                        <button id="deleteProjectButton" type="submit" disabled="yes" class="btn btn-outline-danger">Delete project</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
                     </div>
-                </form>
-            </div>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+    {% for category, message in get_flashed_messages(with_categories=true) %}
+        <div class="alert alert-{{category}} alert-dismissible fade show" role="alert">
+            {% if message == 'project-name-updated' %}
+                Project name successfully updated.
+            {% elif message == 'project-name-update-error' %}
+                Project name update failed.
+            {% elif message == 'description-updated' %}
+                Description successfully updated.
+            {% else %}
+                Unknown status: <code>{{message}}</code>
+            {% endif %}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endfor %}
+
+    <div class="row mb-2 gy-4">
+        <div class="col">
+            <form action="{{ url_for('projects.api_update_description', slug=project.slug) }}" method="POST">
+                {{ description_edit_form.csrf_token }}
+                <div class="input-group">
+                    {{ description_edit_form.description(class="form-control", rows=3, placeholder="Description") }}
+                    <button type="submit" class="btn btn-warning">Update</button>
+                </div>
+            </form>
         </div>
     </div>
 {% endblock %}

@@ -37,6 +37,15 @@ class NameEditForm(FlaskForm):
 class DescriptionEditForm(FlaskForm):
     description = TextAreaField('Description')
 
+class LeaveProjectForm(FlaskForm):
+    '''Not actually a form, only a CSRF token is included.'''
+    pass
+
+class DeleteProjectForm(FlaskForm):
+    '''Not actually a form, only a CSRF token is included.'''
+    pass
+
+
 @bp.route('/<slug>')
 @require_login
 def view(slug):
@@ -45,7 +54,10 @@ def view(slug):
         return abort(404)
     name_edit_form = NameEditForm(name=project.name)
     description_edit_form = DescriptionEditForm(description=project.description)
-    return render_template('dashboard-project-view.html', project=project, name_edit_form=name_edit_form, description_edit_form=description_edit_form)
+    leave_project_form = LeaveProjectForm()
+    delete_project_form = DeleteProjectForm()
+    return render_template('dashboard-project-view.html', project=project, name_edit_form=name_edit_form, description_edit_form=description_edit_form,
+                           leave_form=leave_project_form, delete_form=delete_project_form)
 
 @bp.route('/api/<slug>/edit-name', methods=['POST'])
 @require_login
@@ -74,3 +86,29 @@ def api_update_description(slug):
         project.save()
         flash('description-updated', 'success')
         return redirect(url_for('projects.view', slug=project.slug))
+
+@bp.route('/api/<slug>/leave', methods=['POST'])
+@require_login
+def api_leave_project(slug):
+    project = Project.get_or_none(Project.slug == slug)
+    if project is None:
+        return abort(404)
+    form = LeaveProjectForm()
+    if form.validate_on_submit():
+        ProjectUser.delete().where(ProjectUser.project == project, ProjectUser.user == g.user).execute()
+        flash('left-project', 'success')
+    return redirect(url_for('projects.index'))
+
+@bp.route('/api/<slug>/delete', methods=['POST'])
+@require_login
+def api_delete_project(slug):
+    project = Project.get_or_none(Project.slug == slug)
+    if project is None:
+        return abort(404)
+    form = DeleteProjectForm()
+    if form.validate_on_submit():
+        ProjectUser.delete().where(ProjectUser.project == project).execute()
+        project.delete_instance()
+        flash('project-deleted', 'success')
+    return redirect(url_for('projects.index'))
+    
