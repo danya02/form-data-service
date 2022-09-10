@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Project {{project.name}}{% endblock %}
+{% block content %}
+    <div class="container">
+        <div class="row mb-2 gy-4">
+            <div class="col">
+                <h1 style="display:inline-block">{{project.name}}</h1>
+                <a class="btn btn-primary btn-sm h1" data-bs-toggle="collapse" href="#titleEditCollapse" role="button" aria-expanded="false" aria-controls="titleEditCollapse">
+                    <i class="bi bi-pencil-square" aria-label="Edit name"></i>
+                </a>
+                <div class="collapse" id="titleEditCollapse">
+                    <div class="card card-body">
+                        <p class="card-text">Edit the name of the project:</p>
+                        <form action="{{ url_for('projects.api_update_name', slug=project.slug) }}" method="POST">
+                            {{ name_edit_form.csrf_token }}
+                            <div class="input-group">
+                                {{ name_edit_form.name(class="form-control") }}
+                                <button type="submit" class="btn btn-warning">Update</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% for category, message in get_flashed_messages(with_categories=true) %}
+            <div class="alert alert-{{category}} alert-dismissible fade show" role="alert">
+                {% if message == 'project-name-updated' %}
+                    Project name successfully updated.
+                {% elif message == 'project-name-update-error' %}
+                    Project name update failed.
+                {% elif message == 'description-updated' %}
+                    Description successfully updated.
+                {% else %}
+                    Unknown status: <code>{{message}}</code>
+                {% endif %}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+
+        <div class="row mb-2 gy-4">
+            <div class="col">
+                <form action="{{ url_for('projects.api_update_description', slug=project.slug) }}" method="POST">
+                    {{ description_edit_form.csrf_token }}
+                    <div class="input-group">
+                        {{ description_edit_form.description(class="form-control", rows=3, placeholder="Description") }}
+                        <button type="submit" class="btn btn-warning">Update</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}
