@@ -85,6 +85,48 @@ class ProjectUser(MyModel):
     user = pw.ForeignKeyField(User, backref='projects', on_delete='CASCADE')
 
 
+@create_table
+class Form(MyModel):
+    """
+    A form holds some fields, and the inputted data from those fields.
+    """
+    project = pw.ForeignKeyField(Project, backref='forms', on_delete='CASCADE')
+    slug = pw.CharField(unique=True, default=lambda: secrets.token_hex(16))
+    name = pw.CharField()
+    created_at = pw.DateTimeField(default=pw.datetime.datetime.now)
+    fields = pw.JSONField(default=[])  # List of fields.
+    # Fields should have the format:
+    # {
+    #     'name': 'field_name',
+    #     'required': false
+    # }
+    # name is the name of the field, the expected formdata key.
+    # required is a boolean indicating whether the field is required -- if it is, and the corresponding key is not present in the formdata,
+    # the submission will be rejected with a 400 error. If there is no 'required' key, it is assumed to be false.
+
+    config = pw.JSONField(default={})  # Configuration for the form. JSON is used for extensibility. The following keys are used:
+    # 'redirect': The URL to redirect to after a successful submission. If not present, the submission will be returned as JSON.
+    # 'store_only_fields': if True, only the fields specified in the 'fields' key will be stored. If False, all fields sent by the user-agent will be stored. If not present, defaults to False.
+    # 'store_ip': if True, the IP address of the user-agent will be stored. If False, it will not. If not present, defaults to False.
+    # 'store_headers': if True, the headers of the user-agent will be stored. If False, they will not. If not present, defaults to False.
+    # 'max_data_size': the maximum size of the formdata, in bytes. If not present, defaults to 1*1024*1024 characters (1 MiB).
+
+@create_table
+class FormRecord(MyModel):
+    """
+    A record of a form submission.
+    """
+    form = pw.ForeignKeyField(Form, backref='records', on_delete='CASCADE')
+    created_at = pw.DateTimeField(default=pw.datetime.datetime.now)
+    unread = pw.BooleanField(default=True)  # Whether the record has been read (or acted upon) by someone.
+    data = pw.JSONField(default={}) # The data submitted in the form.
+    metadata = pw.JSONField(default={}) # Metadata about the submission. JSON is used for extensibility. The following keys are used:
+    # 'ip': The IP address of the user-agent that submitted the form. Null or not present if not stored.
+    # 'headers': The headers of the user-agent that submitted the form. Null or not present if not stored.
+
+
+
+
 # At the very end of the file, reset the database connection.
 # Otherwise, the very first request will fail with an peewee.OperationalError: Connection already opened.
 try: db.close()

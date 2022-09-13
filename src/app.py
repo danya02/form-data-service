@@ -16,6 +16,11 @@ csrf = CSRFProtect(app)
 
 @app.before_request
 def before_request():
+    # NB: This is used to get the real IP address from Cloudflare.
+    # Cloudflare sets the CF-Connecting-IP header.
+    # We will trust it directly if present -- if you are not using Cloudflare like this, this is a security risk!
+    # If you are not using Cloudflare, you should remove this line.
+    request.remote_addr = request.headers.get('CF-Connecting-IP', request.remote_addr) 
     db.connect()
     g.user = None
     if 'user_id' in session:
