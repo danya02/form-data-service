@@ -1,3 +1,4 @@
+from typing import Tuple
 import peewee as pw
 import hashlib
 import hmac
@@ -75,6 +76,25 @@ class Project(MyModel):
     owner = pw.ForeignKeyField(User, backref='projects', on_delete='RESTRICT')  # Users must transfer or delete their projects before deleting their account.
     created_at = pw.DateTimeField(default=pw.datetime.datetime.now)
 
+    def can_do(self, user: User, action: str) -> Tuple[bool, str]:
+        """
+        Check if the user can perform the specified action on a project.
+
+        Returns a boolean to indicate whether the user can perform the action, and if false, a string representing the reason.
+
+        Right now returns true iff the user is the project owner or a project member.
+        Project members should have more detailed intents in the future.
+        """
+        if user == self.owner:
+            return True, 'ok'
+
+        if ProjectUser.select().where(ProjectUser.project == self, ProjectUser.user == user).exists():
+            return True, 'ok'
+
+        return False, 'not_member'
+
+
+
 @create_table
 class ProjectUser(MyModel):
     """
@@ -83,6 +103,11 @@ class ProjectUser(MyModel):
     """
     project = pw.ForeignKeyField(Project, backref='users', on_delete='CASCADE')
     user = pw.ForeignKeyField(User, backref='projects', on_delete='CASCADE')
+
+    class Meta:
+        indexes = (
+            (('project', 'user'), True),
+        )
 
 
 @create_table
@@ -110,6 +135,16 @@ class Form(MyModel):
     # 'store_ip': if True, the IP address of the user-agent will be stored. If False, it will not. If not present, defaults to False.
     # 'store_headers': if True, the headers of the user-agent will be stored. If False, they will not. If not present, defaults to False.
     # 'max_data_size': the maximum size of the formdata, in bytes. If not present, defaults to 1*1024*1024 characters (1 MiB).
+
+    def can_do(self, user: User, action: str) -> Tuple[bool, str]:
+        """
+        Check if the user can perform the specified action on a form.
+
+        Returns a boolean to indicate whether the user can perform the action, and if false, a string representing the reason.
+
+        Currently defers validation to the project.
+        """
+        return self.project.can_do(user, action)
 
 @create_table
 class FormRecord(MyModel):

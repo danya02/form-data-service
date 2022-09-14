@@ -228,4 +228,29 @@
             </div>
         </div>
     </div>
+
+    <div class="row mb-2">
+        <h1>{{forms|length}} forms</h1>
+    
+        {% for form in forms %}
+        <div class="card mb-2">
+            <div class="card-body">
+                <h5 class="card-title">{{form.name}}</h5>
+                <h6 class="card-subtitle mb-2 text-muted">{{form.slug}}</h6>
+                <p class="card-text">{{form.description}}</p>
+                <a href="{{ url_for('forms.view', slug=form.slug) }}" class="card-link stretched-link">View form</a>
+            </div>
+        </div>
+        {% endfor %}
+
+        <form action="{{ url_for('forms.api_create', slug=project.slug) }}" method="POST">
+            {{ add_form_form.csrf_token }}
+            <div class="input-group">
+                <button type="submit" class="btn btn-success">
+                    Add new form...
+                </button>
+            </div>
+        </form>
+
+    </div>
 {% endblock %}
