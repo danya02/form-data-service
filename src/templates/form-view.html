@@ -7,7 +7,7 @@
             <a class="btn btn-primary btn-sm h1" data-bs-toggle="collapse" href="#titleEditCollapse" role="button" aria-expanded="false" aria-controls="titleEditCollapse">
                 <i class="bi bi-pencil-square" aria-label="Edit name"></i>
             </a>
-            <button class="btn btn-danger btn-sm h1" data-bs-toggle="collapse" data-bs-target="#deleteFormFirstCollapse" {% if form.can_do(g.user, "form.delete") %}disabled{% endif %} >
+            <button class="btn btn-danger btn-sm h1" data-bs-toggle="collapse" data-bs-target="#deleteFormFirstCollapse" {% if not form.can_do(g.user, "form.delete") %}disabled{% endif %} >
                 <i class="bi bi-trash" aria-label="Delete form"></i>
             </button>
 
@@ -37,9 +37,7 @@
                 </div>
             </div>
 
-            {% else %}
-
-
+            {% if form.can_do(g.user, "form.delete") %}
                 <div class="modal fade" id="deleteFormModal" tabindex="-1" aria-labelledby="deleteFormModalLabel" aria-hidden="true">
                     <div class="modal-dialog">
                         <div class="modal-content">
@@ -90,8 +88,18 @@
 
     {% for category, message in get_flashed_messages(with_categories=true) %}
         <div class="alert alert-{{category}} alert-dismissible fade show" role="alert">
-            {% if message == 'form-name-updated' %}
+            {% if message == 'form-name-set' %}
                 Form name successfully updated.
+            {% elif message == 'form-description-set' %}
+                Form description successfully updated.
+            {% elif message == 'form-fields-invalid-generic' %}
+                There was an error in the form field data. Most likely this is a bug in the application.
+            {% elif message == 'form-fields-already-edited' %}
+                Your changes were not saved because someone else edited the form fields at the same time. Please check the current form fields.
+            {% elif message == 'form-fields-invalid-duplicate' %}
+                There were more than one field with the same name, which is not allowed.
+            {% elif message == 'form-fields-set' %}
+                Form fields have been updated successfully.
             {% else %}
                 Unknown status: <code>{{message}}</code>
             {% endif %}
@@ -99,20 +107,339 @@
         </div>
     {% endfor %}
 
+
     <div class="row mb-2">
-        <div class="col">
-            <form action="{{ url_for('forms.api_update_description', slug=form.slug) }}" method="POST">
-                {{ description_edit_form.csrf_token }}
-                <div class="input-group">
-                    {{ description_edit_form.description(class="form-control", rows=3, placeholder="Description") }}
-                    <button type="submit" class="btn btn-warning">Update</button>
+        <div class="row">
+            <button type="button" class="btn btn-primary" data-bs-toggle="collapse" data-bs-target="#formFieldsCollapse">
+                {{ form.fields|length }} fields...
+            </button>
+        </div>
+    </div>
+    <div class="row mb-2">
+        <div class="row">
+            <div class="collapse" id="formFieldsCollapse">
+                <p class="text-danger">Form fields have not loaded, is JavaScript enabled?</p>
+            </div>
+
+            <script>
+                // Form config
+                var formConfig = JSON.parse(`{{ form.config|tojson }}`);
+
+                // Form field data
+                var formFields = JSON.parse(`{{ form.fields|tojson }}`);
+                var editedFormFields = JSON.parse(`{{ form.fields|tojson }}`);
+                // Initially the edited is identical, but we'll change it later
+                // We will later present a diff to the user.
+                
+                // Generate a table with inputs for each form
+                // A form field has `name`:str and `required`:bool properties
+                // The name should be a text input, and the required should be a checkbox
+                var formFieldsTable = document.createElement("table");
+                formFieldsTable.classList.add("table");
+                formFieldsTable.classList.add("table-striped");
+            
+                // Create table header: Name, Required, Delete
+                var formFieldsTableHeader = document.createElement("thead");
+                var formFieldsTableHeaderRow = document.createElement("tr");
+                var formFieldsTableHeaderName = document.createElement("th");
+                formFieldsTableHeaderName.innerText = "Name";
+                var formFieldsTableHeaderRequired = document.createElement("th");
+                formFieldsTableHeaderRequired.innerText = "Required";
+                var formFieldsTableHeaderDelete = document.createElement("th");
+                formFieldsTableHeaderDelete.innerText = "Delete";
+                formFieldsTableHeaderRow.appendChild(formFieldsTableHeaderName);
+                formFieldsTableHeaderRow.appendChild(formFieldsTableHeaderRequired);
+                formFieldsTableHeaderRow.appendChild(formFieldsTableHeaderDelete);
+                formFieldsTableHeader.appendChild(formFieldsTableHeaderRow);
+                formFieldsTable.appendChild(formFieldsTableHeader);
+                var formFieldsTableBody = document.createElement("tbody");
+                formFieldsTable.appendChild(formFieldsTableBody);
+
+                function formFieldDeleteButtonOnClick(){
+                    // Remove the field from the edited form fields
+                    var formField = editedFormFields[this.dataset.index];
+                    editedFormFields.splice(this.dataset.index, 1);
+                    // Delete all rows from the table
+                    formFieldsTableBody.innerHTML = "";
+                    // Re-add all rows
+                    for(var i=0; i<editedFormFields.length; i++){
+                        var newRow = formFieldGetRowById(i);
+                        formFieldsTableBody.appendChild(newRow);
+                    }
+                    
+                }
+                function formFieldGetRowById(i) {
+                    var formField = editedFormFields[i];
+
+                    var formFieldRow = document.createElement("tr");
+                    // Create name cell
+                    var formFieldNameCell = document.createElement("td");
+                    var formFieldNameInput = document.createElement("input");
+                    formFieldNameInput.type = "text";
+                    formFieldNameInput.classList.add("form-control");
+                    formFieldNameInput.value = editedFormFields[i].name;
+                    formFieldNameInput.addEventListener("input", function() {
+                        var formField = editedFormFields[this.dataset.index];
+                        formField.name = this.value;
+                    });
+                    formFieldNameInput.dataset.index = editedFormFields.length - 1;
+                    formFieldNameCell.appendChild(formFieldNameInput);
+                    formFieldRow.appendChild(formFieldNameCell);
+                    // Create required cell
+                    var formFieldRequiredCell = document.createElement("td");
+                    var formFieldRequiredInput = document.createElement("input");
+                    formFieldRequiredInput.type = "checkbox";
+                    formFieldRequiredInput.checked = editedFormFields[i].required;
+                    formFieldRequiredInput.addEventListener("input", function() {
+                        var formField = editedFormFields[this.dataset.index];
+                        formField.required = this.checked;
+                    });
+                    formFieldRequiredInput.dataset.index = editedFormFields.length - 1;
+                    formFieldRequiredCell.appendChild(formFieldRequiredInput);
+                    formFieldRow.appendChild(formFieldRequiredCell);
+                    // Create delete cell
+                    var formFieldDeleteCell = document.createElement("td");
+                    var formFieldDeleteButton = document.createElement("button");
+                    formFieldDeleteButton.classList.add("btn");
+                    formFieldDeleteButton.classList.add("btn-danger");
+                    formFieldDeleteButton.innerHTML = `<i class="bi bi-trash3-fill" aria-label="Delete this field"></i>`;
+                    formFieldDeleteButton.addEventListener("click", formFieldDeleteButtonOnClick);
+                    formFieldDeleteButton.dataset.index = i;
+                    formFieldDeleteCell.appendChild(formFieldDeleteButton);
+
+                    formFieldRow.appendChild(formFieldDeleteCell);
+                    return formFieldRow;
+
+                }
+
+
+                for(var i = 0; i < formFields.length; i++) {
+                    var formFieldRow = formFieldGetRowById(i);
+                    formFieldsTableBody.appendChild(formFieldRow);
+
+                }
+
+                // Create a row for the button for adding a new field
+                // It will occupy all three columns
+                // When it is pressed, a new row is inserted above it
+                var formFieldTableFooter = document.createElement("tfoot");
+                var formFieldAddButton = document.createElement("button");
+                var formFieldAddButtonArea = document.createElement("div");
+                var formFieldAddButtonRow = document.createElement("tr");
+                var formFieldAddButtonCell = document.createElement("td");
+                formFieldAddButtonCell.colSpan = 3;
+                formFieldAddButtonArea.classList.add("d-grid");
+                formFieldAddButton.classList.add("btn");
+                formFieldAddButton.classList.add("btn-outline-success");
+                formFieldAddButton.classList.add("mt-2");
+                formFieldAddButton.innerHTML = `<i class="bi bi-plus"></i> Add a new field...`;
+                formFieldAddButton.addEventListener("click", function() {
+                    // Add a new field to the edited form fields
+                    editedFormFields.push({name: "new-field", required: false});
+                    // Create a new row
+                    var formFieldRow = formFieldGetRowById(editedFormFields.length - 1);
+                    // Insert it above the add button
+                    formFieldsTableBody.appendChild(formFieldRow);
+                });
+                formFieldAddButtonArea.appendChild(formFieldAddButton);
+                formFieldAddButtonCell.appendChild(formFieldAddButtonArea);
+                formFieldAddButtonRow.appendChild(formFieldAddButtonCell);
+                formFieldTableFooter.appendChild(formFieldAddButtonRow);
+                formFieldsTable.appendChild(formFieldTableFooter);
+
+                // Place the form table into the collapse container
+                var container = document.getElementById("formFieldsCollapse");
+                container.innerHTML = "";
+                container.appendChild(formFieldsTable);
+
+                // Create an "apply changes" button
+                // When pressed, it computes a diff and puts it into a modal,
+                // then shows that modal.
+                // The modal has a button to POST the new form JSON to the server, then refresh the page.
+                var applyChangesButton = document.createElement("button");
+                applyChangesButton.classList.add("btn");
+                applyChangesButton.classList.add("btn-warning");
+                applyChangesButton.dataset.bsToggle = "modal";
+                applyChangesButton.dataset.bsTarget = "#formFieldDiffModal";
+                applyChangesButton.innerHTML = `<i class="bi bi-pencil-square"></i> Apply changes`;
+
+                function getChangesList(formFields, editedFormFields){
+                    var list = document.createElement("ul");
+                    list.classList.add("list-group");
+                    var anyChanges = false;
+                    var additions = false;
+                    var removals = false;
+                    var reqchanges = false;
+
+                    // Check for added and changed-requirement fields
+                    for(var i = 0; i < editedFormFields.length; i++) {
+                        var editedFormField = editedFormFields[i];
+                        // For each field, check if it is in the original form fields
+                        var found = false;
+                        for(var j = 0; j < formFields.length; j++) {
+                            var formField = formFields[j];
+                            if(formField.name == editedFormField.name) {
+                                found = true;
+                                break;
+                            }
+                        }
+                        // If the field is not in the original form, say it's added
+                        if(!found) {
+                            var listItem = document.createElement("li");
+                            listItem.classList.add("list-group-item");
+                            listItem.classList.add("list-group-item-success");
+                            listItem.innerHTML = `<i class="bi bi-plus"></i> Added field <code>${editedFormField.name}</code>`;
+                            list.appendChild(listItem);
+                            anyChanges = true;
+                            additions = true;
+                        }
+                        // If the field is in the original form, check if the requirement changed
+                        else {
+                            if(formField.required != editedFormField.required) {
+                                var listItem = document.createElement("li");
+                                listItem.classList.add("list-group-item");
+                                listItem.classList.add("list-group-item-warning");
+                                if(editedFormField.required) {
+                                    listItem.innerHTML = `<i class="bi bi-exclamation-circle-fill"></i> Field <code>${editedFormField.name}</code> is now required`;
+                                }
+                                else {
+                                    listItem.innerHTML = `<i class="bi bi-x-circle-fill"></i> Field <code>${editedFormField.name}</code> is no longer required`;
+                                }
+                                list.appendChild(listItem);
+                                anyChanges = true;
+                                reqchanges = true;
+                            }
+                        }
+                    }
+
+                    // Check for removed fields
+                    for(var i = 0; i < formFields.length; i++) {
+                        var formField = formFields[i];
+                        // For each original field, check if it is in the edited form fields
+                        var found = false;
+                        for(var j = 0; j < editedFormFields.length; j++) {
+                            var editedFormField = editedFormFields[j];
+                            if(formField.name == editedFormField.name) {
+                                found = true;
+                                break;
+                            }
+                        }
+                        // If the field is not in the edited form, say it's removed
+                        if(!found) {
+                            var listItem = document.createElement("li");
+                            listItem.classList.add("list-group-item");
+                            listItem.classList.add("list-group-item-danger");
+                            listItem.innerHTML = `<i class="bi bi-dash"></i> Removed field <code>${formField.name}</code>`;
+                            list.appendChild(listItem);
+                            anyChanges = true;
+                            removals = true;
+                        }
+                    }
+
+                    if(!anyChanges) {
+                        var listItem = document.createElement("li");
+                        listItem.classList.add("list-group-item");
+                        listItem.classList.add("list-group-item-info");
+                        listItem.innerHTML = `<i class="bi bi-check-circle-fill"></i> No changes`;
+                        list.appendChild(listItem);
+                    }
+
+                    return [list, additions, removals, reqchanges];
+                }
+
+                applyChangesButton.addEventListener("click", function() {
+                    // Get the diff list
+                    var [diffList, additions, removals, reqchanges] = getChangesList(formFields, editedFormFields);
+                    // Put it into the modal
+                    var formFieldDiffContainer = document.getElementById("formFieldDiffList");
+                    formFieldDiffContainer.innerHTML = "";
+                    formFieldDiffContainer.appendChild(diffList);
+
+                    // Fill in effects list
+                    var effectsList = document.getElementById("formFieldEffectsList");
+                    effectsList.innerHTML = "";
+                    if(removals){
+                        var listItem = document.createElement("li");
+                        listItem.innerHTML = `Existing data in the removed fields <strong>will not be lost</strong>, but it will also <strong>not show up in the table</strong>; it will be visible if you click on the "details" button of a row.`;
+                        effectsList.appendChild(listItem);
+                        if(formConfig['store_only_fields'] || false){
+                            var listItem = document.createElement("li");
+                            listItem.innerHTML = `This form is configured to only store the fields listed, so if there are any HTML forms that use deleted fields, <strong>the deleted field values will not be saved</strong>.`; 
+                            effectsList.appendChild(listItem);
+                        }   
+                    }
+                    if(additions || reqchanges) {
+                        var listItem = document.createElement("li");
+                        listItem.innerHTML = `Existing forms <strong>may stop working</strong> if there are new required fields that the old form does not have.`;
+                        effectsList.appendChild(listItem);
+                    }
+                    if(!additions && !removals && !reqchanges) {
+                        var listItem = document.createElement("li");
+                        listItem.innerHTML = `No changes will be made to the form.`;
+                        effectsList.appendChild(listItem);
+                    }
+                });
+
+                // Add the button to the collapse
+                var applyChangesButtonArea = document.createElement("div");
+                applyChangesButtonArea.classList.add("d-grid");
+                applyChangesButtonArea.appendChild(applyChangesButton);
+                container.appendChild(applyChangesButtonArea);
+
+            </script>
+        </div>
+        <div class="modal fade" id="formFieldDiffModal" aria-labelledby="formFieldDiffModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="formFieldDiffModalLabel">Changes to form {{form.name}}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>You are about to apply the following changes to the form:</p>
+                        <div id="formFieldDiffList"></div>
+                        <p>Here's what will happen:</p>
+                        <ul id="formFieldEffectsList">
+                            <li class="text-danger">List of changes was not set; this is a bug in the JavaScript!</li>
+                        </ul>
+                        <p>You will <strong>not lose any data</strong> that is already recorded.</p>
+                        <p>This change can be undone by manually setting the form fields back to the original state.</p>
+                        <p>If you would like to cancel your pending changes, refresh the page.</p>
+
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-warning" data-bs-dismiss="modal" id="applyChangesButton">Apply changes</button>
+                        <script>
+                            var applyChangesButton = document.getElementById("applyChangesButton");
+                            applyChangesButton.addEventListener("click", function() {
+                                // Send the new form fields to the server
+                                var request = new XMLHttpRequest();
+                                request.open("POST", "{{url_for('forms.api_update_fields', slug=form.slug)}}");
+                                request.setRequestHeader("Content-Type", "application/json");
+                                request.setRequestHeader("X-CSRFToken", "{{ csrf_token() }}");
+
+                                request.onload = function() {
+                                    // Reload the page regardless of status
+                                    // There will be a message flashed if there was an error
+                                    window.location.reload();
+                                }
+                                request.onerror = function() {
+                                    alert("Error: " + request.status + " " + request.responseText);
+                                }
+                                request.send(JSON.stringify({
+                                    "new": editedFormFields,
+                                    "old": formFields
+                                }));
+
+                            });
+                        </script>
+
+                    </div>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
 
 
-
-    <p>...form fields...</p>
-    </div>
 {% endblock %}

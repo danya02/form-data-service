@@ -3,8 +3,9 @@ import peewee as pw
 import hashlib
 import hmac
 import secrets
+from playhouse.sqlite_ext import SqliteExtDatabase, JSONField
 
-db = pw.SqliteDatabase('database.db')
+db = SqliteExtDatabase('database.db')
 
 class MyModel(pw.Model):
     class Meta:
@@ -119,7 +120,7 @@ class Form(MyModel):
     slug = pw.CharField(unique=True, default=lambda: secrets.token_hex(16))
     name = pw.CharField()
     created_at = pw.DateTimeField(default=pw.datetime.datetime.now)
-    fields = pw.JSONField(default=[])  # List of fields.
+    fields = JSONField(default=[])  # List of fields.
     # Fields should have the format:
     # {
     #     'name': 'field_name',
@@ -129,7 +130,7 @@ class Form(MyModel):
     # required is a boolean indicating whether the field is required -- if it is, and the corresponding key is not present in the formdata,
     # the submission will be rejected with a 400 error. If there is no 'required' key, it is assumed to be false.
 
-    config = pw.JSONField(default={})  # Configuration for the form. JSON is used for extensibility. The following keys are used:
+    config = JSONField(default={})  # Configuration for the form. JSON is used for extensibility. The following keys are used:
     # 'redirect': The URL to redirect to after a successful submission. If not present, the submission will be returned as JSON.
     # 'store_only_fields': if True, only the fields specified in the 'fields' key will be stored. If False, all fields sent by the user-agent will be stored. If not present, defaults to False.
     # 'store_ip': if True, the IP address of the user-agent will be stored. If False, it will not. If not present, defaults to False.
@@ -154,8 +155,8 @@ class FormRecord(MyModel):
     form = pw.ForeignKeyField(Form, backref='records', on_delete='CASCADE')
     created_at = pw.DateTimeField(default=pw.datetime.datetime.now)
     unread = pw.BooleanField(default=True)  # Whether the record has been read (or acted upon) by someone.
-    data = pw.JSONField(default={}) # The data submitted in the form.
-    metadata = pw.JSONField(default={}) # Metadata about the submission. JSON is used for extensibility. The following keys are used:
+    data = JSONField(default={}) # The data submitted in the form.
+    metadata = JSONField(default={}) # Metadata about the submission. JSON is used for extensibility. The following keys are used:
     # 'ip': The IP address of the user-agent that submitted the form. Null or not present if not stored.
     # 'headers': The headers of the user-agent that submitted the form. Null or not present if not stored.
 
