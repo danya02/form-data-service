@@ -6,6 +6,7 @@ from flask_wtf import CSRFProtect, FlaskForm
 from wtforms import PasswordField, HiddenField, EmailField
 from wtforms.validators import DataRequired, Email
 
+from ingress import bp as ingress_bp
 app = Flask(__name__)
 
 db.connect()
@@ -13,6 +14,7 @@ app.secret_key = FlaskSecretKey.get_current()
 db.close()
 
 csrf = CSRFProtect(app)
+csrf.exempt(ingress_bp)
 
 @app.before_request
 def before_request():

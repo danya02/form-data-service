@@ -26,7 +26,10 @@ def view(slug):
     name_edit_form = NameEditForm(name=form.name)
     delete_form = DeleteForm()
 
-    return render_template('form-view.html', form=form, name_edit_form=name_edit_form, delete_form=delete_form)
+    # TODO: Pagination
+    records_section = FormRecord.select().where(FormRecord.form == form).order_by(FormRecord.created_at.desc())
+
+    return render_template('form-view.html', form=form, name_edit_form=name_edit_form, delete_form=delete_form, records_section=records_section)
 
 class AddFormForm(FlaskForm):
     '''Not actually a form, only a CSRF token is included.'''
@@ -120,3 +123,21 @@ def api_delete_form(slug):
         form.delete_instance()
         flash('form-deleted', 'success')
         return redirect(url_for('projects.view', slug=form.project.slug))
+
+@bp.route('/<slug>/api/toggle_read/<record_id>', methods=['POST'])
+@require_login
+def api_toggle_view(slug, record_id):
+    form = Form.get_or_none(Form.slug == slug)
+    if form is None:
+        return abort(404)
+    if not form.can_do(g.user, 'forms.view'):
+        return abort(403)
+    record = FormRecord.get_or_none(FormRecord.id == record_id)
+    if record is None:
+        return abort(404)
+    if record.form != form:
+        return abort(403)
+    
+    record.unread = not record.unread
+    record.save()
+    return 'true' if record.unread else 'false'

@@ -441,5 +441,117 @@
         </div>
     </div>
 
+    <div class="row mb-2">
+        <div class="col">
+            <h5>Records</h5>
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        {% for field in form.fields %}
+                            <th>{{field['name']}}</th>
+                        {% endfor %}
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <script>
+                    var formFields = JSON.parse(`{{form.fields|tojson}}`);
+                    var formConfig = JSON.parse(`{{form.config|tojson}}`);
+                    this.formRecords = [];
+
+                    function readToggle(button){
+                        edit_url = "{{url_for('forms.api_toggle_view', slug=form.slug, record_id='RECORD_ID')}}".replace("RECORD_ID", button.dataset.recordId);
+                        var request = new XMLHttpRequest();
+                        request.open("POST", edit_url);
+                        request.setRequestHeader("Content-Type", "application/json");
+                        request.setRequestHeader("X-CSRFToken", "{{ csrf_token() }}");
+                        request.onload = function() {
+                            // The response is "true" if the record is now unread, "false" if it is now read
+                            if(request.status != 200){
+                                alert("Error: " + request.status + " " + request.responseText);
+                            }
+                            if(request.responseText == "false"){
+                                button.innerHTML = `<i class="bi bi-eye-slash-fill" aria-label="Mark as unread"></i>`;
+                                document.getElementById("record-" + button.dataset.recordId + "-row").classList.remove("table-primary");
+                            } else {
+                                button.innerHTML = `<i class="bi bi-eye-fill" aria-label="Mark as read"></i>`;
+                                document.getElementById("record-" + button.dataset.recordId + "-row").classList.add("table-primary");
+                            }
+                        }
+                        request.onerror = function() {
+                            alert("Error: " + request.status + " " + request.responseText);
+                        }
+                        request.send();
+                    }
+                </script>
+                <tbody>
+                    {% for record in records_section %}
+                        <script>
+                            this.formRecords.push({
+                                "id": "{{record.id}}",
+                                "ts": "{{record.created_at.timestamp()}}",
+                                "data": JSON.parse(`{{record.data|tojson}}`),
+                                "metadata": JSON.parse(`{{record.metadata|tojson}}`),
+                                "unread": Number.parseInt("{{'1' if record.unread==True else '0'}}"),
+                            });
+                        </script>
+                        <tr id="record-{{record.id}}-row" class="{% if record.unread %}table-primary{% endif %}">
+                            <td id="record-{{record.id}}-date">{{record.created_at.strftime('%Y-%m-%d %H:%M:%S')}}</td>
+                            <script>document.getElementById("record-{{record.id}}-date").innerText = new Date(this.formRecords[this.formRecords.length - 1].ts * 1000).toLocaleString();</script>
+                            {% for field in form.fields %}
+                                {% if field['name'] in record.data and record.data.get(field['name'])!=None %}
+                                    <td>{{record.data[field['name']]}}</td>
+                                {% else %}
+                                    <td><span class="badge text-bg-secondary"><i class="bi bi-file-earmark-break-fill fs-3" aria-label="Data not available"></i></span></td>
+                                {% endif %}
+                            {% endfor %}
+                            <td>
+                                <button id="record-{{record.id}}-read-toggle" class="btn btn-outline-success" onclick="readToggle(this); return false;" data-record-id="{{record.id}}" data-state="{{ 'unread' if record.unread else 'read' }}">
+                                    {% if record.unread %}
+                                        <i class="bi bi-eye-fill" aria-label="Mark as read"></i>
+                                    {% else %}
+                                        <i class="bi bi-eye-slash-fill" aria-label="Mark as unread"></i>
+                                    {% endif %}
+                                </button>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="{{form.fields|length + 3}}">No records yet...</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+        </div>
+    </div>
+
+    <div class="row mb-2">
+        <div class="row">
+            <button type="button" class="btn btn-outline-success" data-bs-toggle="collapse" data-bs-target="#formHtmlCollapse">
+                Add this form to your pages...
+            </button>
+        </div>
+    </div>
+    <div class="row mb-2">
+        <div class="collapse" id="formHtmlCollapse">
+            <div class="card card-body">
+                <p>To place this form on your page, use the following HTML as a base:</p>
+<pre class="card card-body" id="formHtmlContent">
+No HTML has been generated! Is JavaScript enabled?
+</pre>
+            <script>
+                var formHTML = `
+<form action="{{url_for('ingress.form_submit', slug=form.slug, _external=True)}}" method="POST">
+{% for field in form.fields %}    <input type="text" name="{{field['name']}}" placeholder="Value of {{field['name']}}" />
+{% endfor %}
+    <input type="submit" value="Send form!" />
+</form>`;
+                document.getElementById("formHtmlContent").innerText = formHTML;
+            </script>
+
+            </div>
+        </div>
+    </div>
 
 {% endblock %}
