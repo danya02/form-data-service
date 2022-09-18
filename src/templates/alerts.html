@@ -1,0 +1,62 @@
+{% for category, message in get_flashed_messages(with_categories=true) %}
+<div class="alert alert-{{category}} alert-dismissible fade show" role="alert">
+    {# BEGIN dashboard-project-view alerts #}
+    {% if message == 'project-name-updated' %}
+        Project name successfully updated.
+    {% elif message == 'project-name-update-error' %}
+        Project name update failed.
+    {% elif message == 'description-updated' %}
+        Description successfully updated.
+    {% elif message == 'add-user-not-found' %}
+        Could not add user with this email address because it does not exist.
+    {% elif message == 'add-not-owner' %}
+        You cannot add users to this project because you are not the owner of this project.
+    {% elif message == 'add-ok' %}
+        Added user to project OK.
+    {% elif message == 'remove-ok' %}
+        Removed user from project OK.
+    {% elif message == 'remove-not-owner' %}
+        You cannot remove users from this project because you are not its owner. You can leave the project by deleting it.
+    {% elif message == 'form-deleted' %}
+        Form deleted OK.
+    {# END dashboard-project-view alerts #}
+    {# BEGIN dashboard-main alerts #}
+    {% elif message == 'left-project' %}
+        You have left the project.
+    {% elif message == 'project-deleted' %}
+        The project was deleted.
+    {# END dashboard-main alerts #}
+    {# BEGIN form-view alerts #}
+    {% elif message == 'form-name-set' %}
+        Form name successfully updated.
+    {% elif message == 'form-description-set' %}
+        Form description successfully updated.
+    {% elif message == 'form-fields-invalid-generic' %}
+        There was an error in the form field data. Most likely this is a bug in the application.
+    {% elif message == 'form-fields-already-edited' %}
+        Your changes were not saved because someone else edited the form fields at the same time. Please check the current form fields.
+    {% elif message == 'form-fields-invalid-duplicate' %}
+        There were more than one field with the same name, which is not allowed.
+    {% elif message == 'form-fields-set' %}
+        Form fields have been updated successfully.
+    {# END form-view alerts #}
+    {# BEGIN login alerts #}
+    {% elif message == 'login-error-email' %}
+        Invalid email or password.
+    {% elif message == 'login-error-bug' %}
+        Encountered an unexpected state in the login system. Your login process was reset, please try again.
+    {% elif message == 'requires-login' %}
+        You must be logged in to access this page.
+    {% elif message == 'logout-ok' %}
+        You have logged out successfully.
+    {% elif message == 'login-then-2fa' %}
+        Email and password OK! Now please use your second factor.
+    {% elif message == 'totp-recovery-codes-reset' %}
+        Your TOTP recovery codes have been reset.
+
+    {% else %}
+        Unknown status: <code>{{message}}</code>
+    {% endif %}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+{% endfor %}

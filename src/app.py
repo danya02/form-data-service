@@ -36,31 +36,10 @@ def after_request(response):
 
 register_blueprints_on_app(app)
 
-class LoginForm(FlaskForm):
-    email = EmailField('Email', validators=[DataRequired()], render_kw={'placeholder': 'alice@example.com'})
-    password = PasswordField('Password', validators=[DataRequired()], render_kw={'placeholder': 'passw0rd'})
-    next = HiddenField(default='/')
-
 @app.route('/')
 @require_login
 def index():
     return redirect(url_for('projects.index'))
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    form = LoginForm(data={'next': request.args.get('next')})
-    if form.validate_on_submit():
-        user = User.get_or_none(User.email == form.email.data)
-        if user is None:
-            flash('login-error', 'error')
-        else:
-            if user.check_password(form.password.data):
-                session['user_id'] = user.id
-                return redirect(form.next.data or url_for('index'))
-            else:
-                flash('login-error', 'error')
-    return render_template('login.html', form=form)
-
 
 @app.route('/logout')
 def logout():

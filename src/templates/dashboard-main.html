@@ -2,18 +2,7 @@
 {% block title %}Your projects{% endblock %}
 {% block content %}
 
-{% for category, message in get_flashed_messages(with_categories=true) %}
-<div class="alert alert-{{category}} alert-dismissible fade show mt-2" role="alert">
-    {% if message == 'left-project' %}
-        You have left the project.
-    {% elif message == 'project-deleted' %}
-        The project was deleted.
-    {% else %}
-        Unknown status: <code>{{message}}</code>
-    {% endif %}
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-</div>
-{% endfor %}
+{% include "alerts.html" %}
 
 
     <div class="row mb-2 row-cols-lg-6 gy-4">

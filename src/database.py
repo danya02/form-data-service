@@ -4,6 +4,7 @@ import hashlib
 import hmac
 import secrets
 from playhouse.sqlite_ext import SqliteExtDatabase, JSONField
+import pyotp
 
 db = SqliteExtDatabase('database.db')
 
@@ -43,6 +44,22 @@ class User(MyModel):
     password_scrypt_n = pw.IntegerField(default=16384)
     password_scrypt_r = pw.IntegerField(default=8)
     password_scrypt_p = pw.IntegerField(default=1)
+    totp_secret = pw.BlobField(null=True)  # if None, then TOTP is not enabled
+    totp_recovery_codes = pw.CharField(null=True)  # Space-separated list of recovery codes; when a code is used, a '!' is prepended to it
+    totp_last_attempt_epoch = pw.IntegerField(default=0)  # Set this on every login attempt. If set, do not allow logging in during this epoch. This is used to prevent brute-force attacks.
+
+    webauthn_credential_id = pw.BlobField(null=True)
+    webauthn_public_key = pw.BlobField(null=True)
+    webauthn_user_challenges = JSONField(default={})
+
+    @property
+    def totp_enabled(self):
+        return self.totp_secret is not None
+
+    @property
+    def webauthn_enabled(self):
+        return self.webauthn_credential_id is not None
+
 
     def check_password(self, password):
         return hmac.compare_digest(self.password_scrypt_hash, 
@@ -63,6 +80,29 @@ class User(MyModel):
             r=self.password_scrypt_r,
             p=self.password_scrypt_p)
     
+    def generate_totp_recovery_codes(self, num_codes=10):
+        tokens = []
+        for i in range(num_codes):
+            code = ''
+            for j in range(8):
+               code += f'{secrets.randbelow(10)}'
+            tokens.append(code)
+        self.totp_recovery_codes = ' '.join(tokens)
+    
+    def check_totp_code(self, code) -> Tuple[bool, str]:
+        if self.totp_secret is None:
+            return False, 'no-totp-code-login'
+        current_epoch = int(pw.datetime.datetime.now().timestamp() / 30)
+        if self.totp_last_attempt_epoch == current_epoch:
+            return False, 'totp-code-already-used-now'
+        totp = pyotp.TOTP(self.totp_secret)
+        self.totp_last_attempt_epoch = current_epoch
+        self.save()
+        if totp.verify(code, valid_window=2):
+            return True, 'totp-code-ok'
+        else:
+            return False, 'totp-code-invalid'
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if 'password' in kwargs:

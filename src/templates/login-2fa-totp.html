@@ -1,0 +1,12 @@
+{% extends "login-base.html" %}
+{% block title %}Enter your TOTP security code now{% endblock %}
+<form method="post" action="{{submit_url}}">
+    <div class="form-floating mb-3">
+        {{ form.totp(class_="form-control rounded-3") }}
+        {{ form.totp.label }}
+    </div>
+
+    {{ form.hidden_tag() }}
+
+    <button type="submit" class="w-100 mb-2 btn btn-lg rounded-3 btn-success">Complete login</button>
+</form>

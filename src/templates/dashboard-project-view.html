@@ -130,32 +130,7 @@
         </div>
     </div>
 
-    {% for category, message in get_flashed_messages(with_categories=true) %}
-        <div class="alert alert-{{category}} alert-dismissible fade show" role="alert">
-            {% if message == 'project-name-updated' %}
-                Project name successfully updated.
-            {% elif message == 'project-name-update-error' %}
-                Project name update failed.
-            {% elif message == 'description-updated' %}
-                Description successfully updated.
-            {% elif message == 'add-user-not-found' %}
-                Could not add user with this email address because it does not exist.
-            {% elif message == 'add-not-owner' %}
-                You cannot add users to this project because you are not the owner of this project.
-            {% elif message == 'add-ok' %}
-                Added user to project OK.
-            {% elif message == 'remove-ok' %}
-                Removed user from project OK.
-            {% elif message == 'remove-not-owner' %}
-                You cannot remove users from this project because you are not its owner. You can leave the project by deleting it.
-            {% elif message == 'form-deleted' %}
-                Form deleted OK.
-            {% else %}
-                Unknown status: <code>{{message}}</code>
-            {% endif %}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    {% endfor %}
+    {% include "alerts.html" %}
 
     <div class="row mb-2">
         <div class="col">
