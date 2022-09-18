@@ -53,6 +53,41 @@
         Email and password OK! Now please use your second factor.
     {% elif message == 'totp-recovery-codes-reset' %}
         Your TOTP recovery codes have been reset.
+    {% elif message == 'totp-already-enabled' %}
+        You have tried to enable TOTP, but it is already enabled for your account.
+    {% elif message == 'totp-enable-ok' %}
+        Your account is now protected by TOTP!
+    {% elif message == 'totp-enable-invalid-code' %}
+        We could not enable TOTP because the code you entered was invalid.
+        Please try again; note that the QR code has changed.
+    {% elif message == 'totp-enable-error' %}
+        There was an error while enabling TOTP. Please try again.
+    {% elif message == 'totp-disable-ok' %}
+        Your account is no longer protected by TOTP.
+    {% elif message == 'change-password-invalid-current-password' %}
+        We could not change your password because the current password you entered was incorrect.
+    {% elif message == 'change-password-passwords-dont-match' %}
+        We could not change your password because the two new passwords you entered did not match.
+    {% elif message == 'change-password-ok' %}
+        Your password has been changed OK.
+    {% elif message == 'change-password-ok-old-is-pwned' %}
+        Your password has been changed OK.
+        For your awareness, <em>your old password</em> has previously <a class="alert-link" href="https://haveibeenpwned.com/Passwords">appeared in a data breach</a>.
+        You should consider changing this anywhere else you've used it.
+    {% elif message == 'change-password-new-is-pwned' %}
+        You cannot use this password, as it has been <a class="alert-link" href="https://haveibeenpwned.com/Passwords">previously seen in a data breach</a>.
+        Please choose a different password.
+    {% elif message == 'login-ok-password-is-pwned' %}
+        The password you're using on this site has previously <a class="alert-link" href="https://haveibeenpwned.com/Passwords">appeared in a data breach</a> of another site.
+        <strong>This is not related to a security incident on this site</strong>, however the fact that it has previously appeared elsewhere puts this account at risk.
+        You should consider changing it here on <a class="alert-link" href="{{ url_for('login.change_password') }}">the change password page</a>, as well as on any other site you've used it.
+        <em>
+            {% if g.user.pwned_login_count == 0 %}
+            This is the last time you will see this reminder.
+            {% else %}
+            You will see this reminder {{ g.user.pwned_login_count }} more time{{ 's' if g.user.pwned_login_count > 1 else '' }}.
+            {% endif %}
+        </em>
 
     {% else %}
         Unknown status: <code>{{message}}</code>

@@ -44,6 +44,8 @@ class User(MyModel):
     password_scrypt_n = pw.IntegerField(default=16384)
     password_scrypt_r = pw.IntegerField(default=8)
     password_scrypt_p = pw.IntegerField(default=1)
+    pwned_login_count = pw.IntegerField(default=5)  # If the user logs in, and the password is pwned, this is how many times we will tell them about it.
+
     totp_secret = pw.BlobField(null=True)  # if None, then TOTP is not enabled
     totp_recovery_codes = pw.CharField(null=True)  # Space-separated list of recovery codes; when a code is used, a '!' is prepended to it
     totp_last_attempt_epoch = pw.IntegerField(default=0)  # Set this on every login attempt. If set, do not allow logging in during this epoch. This is used to prevent brute-force attacks.

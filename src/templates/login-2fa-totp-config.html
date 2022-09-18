@@ -8,14 +8,17 @@
         </p>
     </div>
 
-    <div class="row mb-2">
-        <div class="col-6">
-            <ul>
-                {% for code in g.user.totp_recovery_codes %}
-                    <li>{{ code }}</li>
-                {% endfor %}
-            </ul>
+    <div class="row row-cols-2 mb-2">
+        {% for code in g.user.totp_recovery_codes.split() %}
+        <div class="col">
+            <p class="fs-2 text-center {{ 'text-muted text-decoration-line-through' if '!' in code else '' }}">
+                {% if '!' in code %}
+                    <span class="visually-hidden">Used and now inactive</span>
+                {% endif %}
+                {{ code.replace('!', '') }}
+            </p>
         </div>
+        {% endfor %}
     </div>
 
     <div class="row mb-2">
@@ -23,7 +26,7 @@
             <button class="btn btn-outline-warning" data-bs-toggle="collapse" data-bs-target="#recovery-code-regen" aria-expanded="false" aria-controls="collapseExample">Regenerate recovery codes</button>
         </div>
     </div>
-    <div class="row mb-2" id="recovery-code-regen" class="collapse">
+    <div class="row mb-2 collapse" id="recovery-code-regen">
         <div class="col card card-body">
             <p>You are about to regenerate your recovery codes.</p>
             <p>Here's what will happen:</p>
@@ -32,8 +35,8 @@
                 <li>You will be given an <strong>entirely new set</strong> of recovery codes.</li>
             </ul>
             <p>This action cannot be undone.</p>
-            <form action="{{ url_for('login.totp_config') }}" method="POST">
-                {{ csrf_token() }}
+            <form action="{{ url_for('login.totp_config_reset_codes') }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn btn-warning">Regenerate recovery codes</button>
             </form>
         </div>
@@ -68,8 +71,8 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <form action="{{ url_for('login.totp_config') }}" method="POST">
-                        {{ csrf_token() }}
+                    <form action="{{ url_for('login.totp_config_disable') }}" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-danger">Disable TOTP</button>
                     </form>
                 </div>

@@ -2,9 +2,6 @@
 {% block title %}Your projects{% endblock %}
 {% block content %}
 
-{% include "alerts.html" %}
-
-
     <div class="row mb-2 row-cols-lg-6 gy-4">
         <div class="col-lg-6">
             <h2>Projects you own</h2>
@@ -31,6 +28,20 @@
             {% else %}
                 <p>You are not a member of any projects yet.</p>
             {% endfor %}
+        </div>
+
+        <div class="col-lg-6">
+            <h2>Account security</h2>
+            <div class="d-grid btn-group-vertical" role="group" style="justify-content: unset;">
+                <a class="btn btn-outline-primary" href="{{ url_for('login.change_password') }}">Change password</a>
+                <a class="btn btn-outline-{{ 'danger' if not g.user.totp_enabled else 'success' }}" href="{{ url_for('login.totp_config') }}">
+                    TOTP Authentication is {{ 'enabled' if g.user.totp_enabled else 'disabled' }}...
+                </a>
+                <a class="btn btn-outline-{{ 'danger' if not g.user.webauthn_enabled else 'success' }}" href="{{ url_for('login.webauthn_config') }}">
+                    WebAuthn is {{ 'enabled' if g.user.webauthn_enabled else 'disabled' }}...
+                </a>
+
+            </div>
         </div>
     </div>
 {% endblock %}

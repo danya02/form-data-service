@@ -130,8 +130,6 @@
         </div>
     </div>
 
-    {% include "alerts.html" %}
-
     <div class="row mb-2">
         <div class="col">
             <form action="{{ url_for('projects.api_update_description', slug=project.slug) }}" method="POST">
