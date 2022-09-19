@@ -17,8 +17,8 @@ def form_submit(slug):
             abort(400)
         record_data[field['name']] = request.form.get(field['name'])
     
-    if form.config.get('store_only_fields', False):
-        record_data = {k: record_data[k] for k in form.config['fields']}
+    if not form.config.get('store_only_fields', False):
+        record_data.update(request.form)
     
     record_metadata = {}
     if form.config.get('store_ip', False):
@@ -43,5 +43,6 @@ def form_submit(slug):
         return jsonify({
             'success': True,
             'record_id': record.id,
-            'record_data': record.data
+            'record_data': record.data,
+            'form_data': request.form
             })

@@ -50,17 +50,9 @@ class User(MyModel):
     totp_recovery_codes = pw.CharField(null=True)  # Space-separated list of recovery codes; when a code is used, a '!' is prepended to it
     totp_last_attempt_epoch = pw.IntegerField(default=0)  # Set this on every login attempt. If set, do not allow logging in during this epoch. This is used to prevent brute-force attacks.
 
-    webauthn_credential_id = pw.BlobField(null=True)
-    webauthn_public_key = pw.BlobField(null=True)
-    webauthn_user_challenges = JSONField(default={})
-
     @property
     def totp_enabled(self):
         return self.totp_secret is not None
-
-    @property
-    def webauthn_enabled(self):
-        return self.webauthn_credential_id is not None
 
 
     def check_password(self, password):

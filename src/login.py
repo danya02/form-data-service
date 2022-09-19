@@ -44,6 +44,8 @@ def login():
                 session['user_id'] = user.id
                 if check_password_pwnage(form.password.data):
                     flash('login-ok-password-is-pwned', 'warning')
+                    user.pwned_login_count -= 1
+                    user.save()
                 if user.totp_secret is not None:
                     session['login_state'] = 'perform_2fa'
                     return redirect(url_for('.login_2fa', next=request.args.get('next', '/')))
@@ -67,8 +69,6 @@ def login_2fa():
     # If they have only TOTP, then show them the TOTP page.
     # If they have only U2F, then show them the U2F page.
     # If they have both, then show them the U2F page.
-    if g.user.webauthn_credential_id is not None:
-        return redirect(url_for('.login_2fa_webauthn', next=request.args.get('next', '/')))
     elif g.user.totp_enabled:
         return redirect(url_for('.login_2fa_totp', next=request.args.get('next', '/')))
     else:

@@ -28,9 +28,18 @@ def before_request():
     if 'user_id' in session:
         g.user = User.get_or_none(User.id == session['user_id'])
 
-
 @app.after_request
 def after_request(response):
+
+    # If the request was to the ingress, we need to set the Access-Control-Allow-Origin header.
+    # This is because the ingress is a separate domain from the main site.
+
+    if request.path.startswith('/ingress'):
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Origin, Content-Type, Accept, Authorization, X-Request-With'
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+
     db.close()
     return response
 
