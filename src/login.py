@@ -9,6 +9,7 @@ import pyotp
 import io
 import requests
 import hashlib
+import json
 
 bp = Blueprint('login', __name__, url_prefix='/login')
 
@@ -42,10 +43,12 @@ def login():
         else:
             if user.check_password(form.password.data):
                 session['user_id'] = user.id
-                if check_password_pwnage(form.password.data):
-                    flash('login-ok-password-is-pwned', 'warning')
-                    user.pwned_login_count -= 1
-                    user.save()
+                g.user = user
+                if user.pwned_login_count >0:
+                    if check_password_pwnage(form.password.data):
+                        flash('login-ok-password-is-pwned', 'warning')
+                        user.pwned_login_count -= 1
+                        user.save()
                 if user.totp_secret is not None:
                     session['login_state'] = 'perform_2fa'
                     AuditLogEntry.log('user_login_password_only')
@@ -187,6 +190,7 @@ def change_password():
             return redirect(url_for('.change_password'))
 
         g.user.set_password(form.new_password.data)
+        g.user.pwned_login_count = 5  # reset pwned login count
         g.user.save()
         if check_password_pwnage(form.current_password.data):
             flash('change-password-ok-old-is-pwned', 'danger')
@@ -198,4 +202,22 @@ def change_password():
 @bp.route('/audit_log')
 @require_login
 def account_audit_log():
-    return render_template('audit-log.html', log_target='user', user=g.user, entries=list(AuditLogEntry.select().where(AuditLogEntry.who==g.user).order_by(AuditLogEntry.when.desc())))
+    def entry_into_json(record):
+        return json.dumps({
+            'who': record.who.email,
+            'when': record.when.timestamp(),
+            'action': record.action,
+            'ip_address': record.ip_address,
+            'project': record.project.slug if record.project is not None else None,
+            'form': record.form.slug if record.form is not None else None,
+            'extra_data': record.extra_data,
+        }, indent=2)
+
+
+
+    return render_template('audit-log.html',
+                log_target='user',
+                user=g.user,
+                entries=list(AuditLogEntry.select().where(AuditLogEntry.who==g.user).order_by(AuditLogEntry.when.desc())),
+                entry_into_json=entry_into_json
+    )

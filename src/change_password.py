@@ -9,6 +9,7 @@ if user is None:
     exit(1)
 password = getpass('New password: ')
 user.set_password(password)
+user.pwned_login_count = 5
 user.save()
 print('Password changed.')
 db.close()

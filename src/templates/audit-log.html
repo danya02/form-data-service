@@ -22,6 +22,7 @@
                     <th scope="col">User performing action</th>
                     <th scope="col">Project</th>
                     <th scope="col">Form</th>
+                    <th scope="col">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -52,10 +53,10 @@
                             Project created
                         {% elif entry.action == 'project_delete' %}
                             Project deleted
-                        {% elif entry.action == 'project_name_edit' %}
+                        {% elif entry.action == 'project_edit_name' %}
                             Project's name changed
-                        {% elif entry.action == 'project_description_edit' %}
-                            Project's description edited %}
+                        {% elif entry.action == 'project_edit_description' %}
+                            Project's description edited
                         {% elif entry.action == 'project_add_member' %}
                             Added member to project
                         {% elif entry.action == 'project_remove_member' %}
@@ -70,6 +71,8 @@
                             Form deleted
                         {% elif entry.action == 'form_record_delete' %}
                             Form record deleted
+                        {% elif entry.action == 'form_export_csv' %}
+                            Form data exported as CSV
                         {% else %}
                             Unknown action: <code>{{entry.action}}</code>
                         {% endif %}
@@ -88,6 +91,31 @@
                         {% else %}
                             {{ utils.no_data() }}
                         {% endif %}
+                    </td>
+                    <td>
+                        <button class="btn btn-primary position-relative" id="entry-{{entry.id}}-view-json-btn" data-bs-toggle="modal" data-bs-target="#entry-{{entry.id}}-json-modal">
+                            <i class="bi bi-code-slash" title="View JSON"></i>
+                        </button>
+
+                        <div id="entry-{{entry.id}}-json-modal" class="modal fade" tabindex="-1" aria-labelledby="entry-{{entry.id}}-json-modal-label" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered modal-xl">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="entry-{{entry.id}}-json-modal-label">Entry data</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+
+                                    <div class="modal-body">
+                                        <pre><code id="entry-{{entry.id}}-json">{{entry_into_json(entry)}}</code></pre>
+                                    </div>
+
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                     </td>
                 </tr>
                 {% endfor %}

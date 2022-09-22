@@ -83,6 +83,7 @@ def api_update_name(slug):
     form = NameEditForm()
     if form.validate_on_submit():
         old_name = project.name
+        project.name = form.name.data
         project.save()
         AuditLogEntry.log('project_edit_name',
             project=project,
