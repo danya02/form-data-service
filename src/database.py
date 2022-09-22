@@ -5,8 +5,16 @@ import hmac
 import secrets
 from playhouse.sqlite_ext import SqliteExtDatabase, JSONField
 import pyotp
+from flask import request, g
 
-db = SqliteExtDatabase('database.db')
+db = SqliteExtDatabase('database.db',
+    pragmas=(
+        ('journal_mode', 'wal'),
+        ('cache_size', -1024 * 64),  # 64MB page-cache.
+        ('foreign_keys', 1),
+        ('ignore_check_constraints', 0),        
+    )
+)
 
 class MyModel(pw.Model):
     class Meta:
@@ -199,6 +207,30 @@ class Form(MyModel):
     @property
     def unread_record_count(self):
         return FormRecord.select().where(FormRecord.form == self, FormRecord.unread == True).count()
+
+@create_table
+class AuditLogEntry(MyModel):
+    """An entry in the audit log."""
+    who = pw.ForeignKeyField(User, backref='audit_log', on_delete='CASCADE')
+    when = pw.DateTimeField(default=pw.datetime.datetime.now)
+    action = pw.CharField(index=True)
+    ip_address = pw.CharField()
+
+    project = pw.ForeignKeyField(Project, backref='audit_log', on_delete='CASCADE', null=True)
+    form = pw.ForeignKeyField(Form, backref='audit_log', on_delete='CASCADE', null=True)
+    extra_data = JSONField(default={}, null=True)
+
+    @classmethod
+    def log(cls, action: str, *, project: Project = None, form: Form = None, data: dict = {}):
+        """Log an action to the audit log."""
+        AuditLogEntry.create(
+            who=g.user,
+            ip_address=request.remote_addr,
+            project=project,
+            form=form,
+            action=action,
+            extra_data=data
+        )
 
 @create_table
 class FormRecord(MyModel):

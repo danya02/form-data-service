@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% import "utils.html" as utils %}
+{% block title %}
+    Audit log for
+    {% if log_target=='user' %}user {{user.username}}
+    {% elif log_target=='project' %}project {{project.name}}
+    {% elif log_target=='form' %}form {{form.name}}
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+
+<h4>{{ entries|length }} matching entries</h4>
+<div class="row">
+    <div class="col">
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th scope="col">Date and time</th>
+                    <th scope="col">IP address</th>
+                    <th scope="col">Action</th>
+                    <th scope="col">User performing action</th>
+                    <th scope="col">Project</th>
+                    <th scope="col">Form</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in entries %}
+                <tr>
+                    <td>{{ entry.when.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                    <td>{{ entry.ip_address }}</td>
+                    <td>
+                        {% if entry.action == 'user_login_full' %}
+                            User logged in with password
+                        {% elif entry.action == 'user_login_password_only' %}
+                            User entered password and moved on to TOTP
+                        {% elif entry.action == 'user_login_totp_regular' %}
+                            User finished login with TOTP
+                        {% elif entry.action == 'user_login_totp_recovery' %}
+                            User finished login by using a TOTP recovery code
+                        {% elif entry.action == 'user_login_totp_failed' %}
+                            User entered incorrect TOTP code after having entered password correctly
+                        {% elif entry.action == 'user_login_totp_recovery_codes_reset' %}
+                            User reset TOTP recovery codes
+                        {% elif entry.action == 'user_login_totp_enabled' %}
+                            User has enabled TOTP
+                        {% elif entry.action == 'user_login_totp_disabled' %}
+                            User has disabled TOTP
+                        {% elif entry.action == 'user_login_password_changed' %}
+                            Login password changed
+                        {% elif entry.action == 'project_create' %}
+                            Project created
+                        {% elif entry.action == 'project_delete' %}
+                            Project deleted
+                        {% elif entry.action == 'project_name_edit' %}
+                            Project's name changed
+                        {% elif entry.action == 'project_description_edit' %}
+                            Project's description edited %}
+                        {% elif entry.action == 'project_add_member' %}
+                            Added member to project
+                        {% elif entry.action == 'project_remove_member' %}
+                            Removed member from project
+                        {% elif entry.action == 'form_create' %}
+                            Form created
+                        {% elif entry.action == 'form_update_name' %}
+                            Form's name changed
+                        {% elif entry.action == 'form_update_fields' %}
+                            Form's fields updated
+                        {% elif entry.action == 'form_delete' %}
+                            Form deleted
+                        {% elif entry.action == 'form_record_delete' %}
+                            Form record deleted
+                        {% else %}
+                            Unknown action: <code>{{entry.action}}</code>
+                        {% endif %}
+                    </td>
+                    <td>{{ entry.who.name }} (<code>{{entry.who.email}}</code>)</td>
+                    <td>
+                        {% if entry.project %}
+                            <a href="{{url_for('projects.view', slug=entry.project.slug)}}">{{ entry.project.name }}</a>
+                        {% else %}
+                            {{ utils.no_data() }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if entry.project %}
+                            <a href="{{url_for('forms.view', slug=entry.form.slug)}}">{{ entry.form.title }}</a>
+                        {% else %}
+                            {{ utils.no_data() }}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

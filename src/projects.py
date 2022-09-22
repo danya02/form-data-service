@@ -30,6 +30,10 @@ def create():
     form = CreateProjectForm()
     if form.validate_on_submit():
         project = Project.create(owner=g.user, name='New Untitled Project')
+        AuditLogEntry.log('project_create',
+            project=project
+        )
+        return redirect(url_for('projects.view', slug=project.slug))
         return redirect(url_for('projects.view', slug=project.slug))
 
 class NameEditForm(FlaskForm):
@@ -78,8 +82,12 @@ def api_update_name(slug):
         return abort(404)
     form = NameEditForm()
     if form.validate_on_submit():
-        project.name = form.name.data
+        old_name = project.name
         project.save()
+        AuditLogEntry.log('project_edit_name',
+            project=project,
+            data={'new_name': project.name}
+        )
         flash('project-name-updated', 'success')
     else:
         flash('project-name-update-error', 'danger')
@@ -96,6 +104,9 @@ def api_update_description(slug):
         project.description = form.description.data
         project.save()
         flash('description-updated', 'success')
+        AuditLogEntry.log('project_edit_description',
+            project=project,
+            data={'new_description': project.description})
         return redirect(url_for('projects.view', slug=project.slug))
 
 @bp.route('/api/<slug>/leave', methods=['POST'])
@@ -108,6 +119,9 @@ def api_leave_project(slug):
     if form.validate_on_submit():
         ProjectUser.delete().where(ProjectUser.project == project, ProjectUser.user == g.user).execute()
         flash('left-project', 'success')
+        AuditLogEntry.log('project_leave',
+            project=project
+        )
     return redirect(url_for('projects.index'))
 
 @bp.route('/api/<slug>/delete', methods=['POST'])
@@ -118,6 +132,18 @@ def api_delete_project(slug):
         return abort(404)
     form = DeleteProjectForm()
     if form.validate_on_submit():
+        AuditLogEntry.log(
+            'project_delete',
+            project=None, # Because the project is now gone, so we cannot reference it.
+            data={
+                'project_slug': project.slug,
+                'project_name': project.name,
+                'project_description': project.description,
+                'form_count': project.form_count,
+                'member_count': project.member_count,
+                'total_record_count': project.total_record_count
+                }
+        )
         ProjectUser.delete().where(ProjectUser.project == project).execute()
         project.delete_instance()
         flash('project-deleted', 'success')
@@ -143,6 +169,11 @@ def api_add_member(slug):
             try:
                 ProjectUser.create(project=project, user=user)
                 flash('add-ok', 'success')
+                AuditLogEntry.log('project_add_member',
+                    project=project,
+                    data={'new_member_id': user.id,
+                          'new_member_email': user.email}
+                )
             except pw.IntegrityError:
                 flash('add-user-already-member', 'danger')
     return redirect(url_for('projects.view', slug=project.slug))
@@ -167,4 +198,9 @@ def api_remove_member(slug, user_id):
         if form.validate_on_submit():
             ProjectUser.delete().where(ProjectUser.project == project, ProjectUser.user == user).execute()
             flash('remove-ok', 'success')
+            AuditLogEntry.log('project_remove_member',
+                project=project,
+                data={'removed_member_id': user.id,
+                        'removed_member_email': user.email}
+            )
     return redirect(url_for('projects.view', slug=project.slug))

@@ -48,8 +48,10 @@ def login():
                     user.save()
                 if user.totp_secret is not None:
                     session['login_state'] = 'perform_2fa'
+                    AuditLogEntry.log('user_login_password_only')
                     return redirect(url_for('.login_2fa', next=request.args.get('next', '/')))
                 else:
+                    AuditLogEntry.log('user_login_full')
                     session['login_state'] = 'completed'
                     return redirect(request.args.get('next') or url_for('index'))
 
@@ -67,8 +69,6 @@ def login_2fa():
         return redirect(request.args.get('next', '/'))
     # If the user needs to do 2FA, then show them the 2FA page.
     # If they have only TOTP, then show them the TOTP page.
-    # If they have only U2F, then show them the U2F page.
-    # If they have both, then show them the U2F page.
     elif g.user.totp_enabled:
         return redirect(url_for('.login_2fa_totp', next=request.args.get('next', '/')))
     else:
@@ -91,10 +91,15 @@ def login_2fa_totp():
     if form.validate_on_submit():
         result, reason = g.user.check_totp_code(form.totp.data)
         if result:
+            if reason == 'totp-code-ok':
+                AuditLogEntry.log('user_login_totp_regular')
+            elif reason == 'totp-code-recovery':
+                AuditLogEntry.log('user_login_totp_recovery')
             session['login_state'] = 'completed'
             return redirect(request.args.get('next') or url_for('index'))
         else:
             flash(reason, 'danger')
+            AuditLogEntry.log('user_login_totp_failed')
     return render_template('login-2fa-totp.html', form=form, submit_url=url_for('.login_2fa_totp', next=request.args.get('next', '/')))
 
 @bp.route('/2fa/totp/config')
@@ -111,6 +116,7 @@ def totp_config():
 def totp_config_reset_codes():
     g.user.generate_totp_recovery_codes()
     g.user.save()
+    AuditLogEntry.log('user_totp_recovery_codes_reset')
     flash('totp-recovery-codes-reset', 'success')
     return redirect(url_for('.totp_config'))
 
@@ -140,6 +146,7 @@ def totp_config_enable():
             g.user.generate_totp_recovery_codes()
             g.user.save()
             flash('totp-enable-ok', 'success')
+            AuditLogEntry.log('user_login_totp_enabled')
             return redirect(url_for('.totp_config'))
         else:
             flash('totp-enable-invalid-code', 'danger')
@@ -155,6 +162,7 @@ def totp_config_disable():
     g.user.totp_recovery_codes = None
     flash('totp-disable-ok', 'warning')
     g.user.save()
+    AuditLogEntry.log('user_login_totp_disabled')
     return redirect(url_for('.totp_config'))
 
 class ChangePasswordForm(FlaskForm):
@@ -183,10 +191,11 @@ def change_password():
         if check_password_pwnage(form.current_password.data):
             flash('change-password-ok-old-is-pwned', 'danger')
         flash('change-password-ok', 'success')
+        AuditLogEntry.log('user_login_password_changed')
         return redirect(url_for('index'))
     return render_template('change-password.html', form=form)
 
-@bp.route('/webauthn/config')
+@bp.route('/audit_log')
 @require_login
-def webauthn_config():
-    return 'Not implemented'
+def account_audit_log():
+    return render_template('audit-log.html', log_target='user', user=g.user, entries=list(AuditLogEntry.select().where(AuditLogEntry.who==g.user).order_by(AuditLogEntry.when.desc())))

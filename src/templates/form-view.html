@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% import "utils.html" as utils %}
 {% block title %}Form {{form.name}}{% endblock %}
 {% block content %}
     <div class="row mb-2">
@@ -513,7 +514,7 @@
                                 {% if field['name'] in record.data and record.data.get(field['name'])!=None %}
                                     <td>{{record.data[field['name']]}}</td>
                                 {% else %}
-                                    <td><span class="badge bg-secondary"><i class="bi bi-file-earmark-break-fill fs-5" title="Data not available"></i></span></td>
+                                    <td>{{ utils.no_data() }}</td>
                                 {% endif %}
                             {% endfor %}
                             <td>

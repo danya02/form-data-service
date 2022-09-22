@@ -77,6 +77,10 @@ def export_csv(slug):
                 break
             yield write_rows(datas)
             page += 1
+    AuditLogEntry.log('form_export_csv',
+        form=form,
+        project=form.project
+    )
     return Response(response_generator(), mimetype='text/csv', headers={'Content-Disposition': f'attachment; filename="{form.name} export.csv"'})
 
 
@@ -95,6 +99,11 @@ def api_create(project_slug):
     form = AddFormForm()
     if form.validate_on_submit():
         form = Form.create(project=project, name='New Untitled Form')
+        AuditLogEntry.log('form_create',
+            form=form,
+            project=project
+        )
+
         return redirect(url_for('forms.view', slug=form.slug))
 
 
@@ -110,6 +119,11 @@ def api_update_name(slug):
     if name_edit_form.validate_on_submit():
         form.name = name_edit_form.name.data
         form.save()
+        AuditLogEntry.log('form_update_name',
+            form=form,
+            project=form.project,
+            data={'new_name': form.name}
+        )
         flash('form-name-set', 'success')
         return redirect(url_for('forms.view', slug=form.slug))
 
@@ -152,8 +166,14 @@ def api_update_fields(slug):
             return abort(400)
         seen_fields.add(field['name'])
     
+    old_fields = form.fields
     form.fields = new_fields
     form.save()
+    AuditLogEntry.log('form_update_fields',
+        form=form,
+        project=form.project,
+        data={'new_fields': form.fields, 'old_fields': old_fields}
+    )
     flash('form-fields-set', 'success')
     return 'ok'  # This is a JS API endpoint, so we don't redirect.
 
@@ -171,6 +191,15 @@ def api_delete_form(slug):
     if delete_form.validate_on_submit():
         form.delete_instance()
         flash('form-deleted', 'success')
+        AuditLogEntry.log('form_delete',
+            form=None,  # The form is now gone so we can't reference it
+            project=form.project,
+            data={'form_name': form.name,
+                    'form_slug': form.slug,
+                    'form_fields': form.fields,
+                    'form_record_count': form.record_count}
+        )
+        return redirect(url_for('projects.view', slug=form.project.slug))
         return redirect(url_for('projects.view', slug=form.project.slug))
 
 @bp.route('/<slug>/api/toggle_read/<record_id>', methods=['POST'])
@@ -205,5 +234,9 @@ def api_delete_record(slug, record_id):
     if record.form != form:
         return abort(403)
     
+    AuditLogEntry.log('form_record_delete',
+        form=form,
+        project=form.project
+    )
     record.delete_instance()
     return 'ok'

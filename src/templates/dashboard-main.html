@@ -37,10 +37,7 @@
                 <a class="btn btn-outline-{{ 'danger' if not g.user.totp_enabled else 'success' }}" href="{{ url_for('login.totp_config') }}">
                     TOTP Authentication is {{ 'enabled' if g.user.totp_enabled else 'disabled' }}...
                 </a>
-                <a class="btn btn-outline-{{ 'danger' if not g.user.webauthn_enabled else 'success' }}" href="{{ url_for('login.webauthn_config') }}">
-                    WebAuthn is {{ 'enabled' if g.user.webauthn_enabled else 'disabled' }}...
-                </a>
-
+                <a class="btn btn-outline-primary" href="{{ url_for('login.account_audit_log') }}">Account audit log</a>
             </div>
         </div>
     </div>
