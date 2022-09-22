@@ -4,13 +4,16 @@
     <div class="row mb-2">
         <div class="col">
             <h1 style="display:inline-block">{{form.name}}</h1>
-            <a class="btn btn-primary btn-sm h1" data-bs-toggle="collapse" href="#titleEditCollapse" role="button" aria-expanded="false" aria-controls="titleEditCollapse">
-                <i class="bi bi-pencil-square" aria-label="Edit name"></i>
+            <a class="btn btn-primary btn-sm h1" title="Edit name" data-bs-toggle="collapse" href="#titleEditCollapse" role="button" aria-expanded="false" aria-controls="titleEditCollapse">
+                <i class="bi bi-pencil-square"></i>
             </a>
-            <button class="btn btn-danger btn-sm h1" data-bs-toggle="collapse" data-bs-target="#deleteFormFirstCollapse" {% if not form.can_do(g.user, "form.delete") %}disabled{% endif %} >
-                <i class="bi bi-trash" aria-label="Delete form"></i>
+            <button class="btn btn-danger btn-sm h1" title="Delete form" data-bs-toggle="collapse" data-bs-target="#deleteFormFirstCollapse" {% if not form.can_do(g.user, "form.delete") %}disabled{% endif %} >
+                <i class="bi bi-trash"></i>
             </button>
-
+            <a class="btn btn-success btn-sm h1" href="{{ url_for('forms.export_csv', slug=form.slug) }}" title="Download form CSV">
+                <i class="bi bi-cloud-download"></i>
+                <i class="bi bi-filetype-csv"></i>
+            </a>
             <div class="collapse" id="titleEditCollapse">
                 <div class="card card-body">
                     <p class="card-text">Edit the name of this form:</p>
@@ -449,10 +452,10 @@
                                 alert("Error: " + request.status + " " + request.responseText);
                             }
                             if(request.responseText == "false"){
-                                button.innerHTML = `<i class="bi bi-eye-slash-fill" aria-label="Mark as unread"></i>`;
+                                button.innerHTML = `<i class="bi bi-eye-slash-fill" title="Mark as unread"></i>`;
                                 document.getElementById("record-" + button.dataset.recordId + "-row").classList.remove("table-primary");
                             } else {
-                                button.innerHTML = `<i class="bi bi-eye-fill" aria-label="Mark as read"></i>`;
+                                button.innerHTML = `<i class="bi bi-eye-fill" title="Mark as read"></i>`;
                                 document.getElementById("record-" + button.dataset.recordId + "-row").classList.add("table-primary");
                             }
                         }
@@ -480,17 +483,40 @@
                                 {% if field['name'] in record.data and record.data.get(field['name'])!=None %}
                                     <td>{{record.data[field['name']]}}</td>
                                 {% else %}
-                                    <td><span class="badge text-bg-secondary"><i class="bi bi-file-earmark-break-fill fs-3" aria-label="Data not available"></i></span></td>
+                                    <td><span class="badge bg-secondary"><i class="bi bi-file-earmark-break-fill fs-5" title="Data not available"></i></span></td>
                                 {% endif %}
                             {% endfor %}
                             <td>
                                 <button id="record-{{record.id}}-read-toggle" class="btn btn-outline-success" onclick="readToggle(this); return false;" data-record-id="{{record.id}}" data-state="{{ 'unread' if record.unread else 'read' }}">
                                     {% if record.unread %}
-                                        <i class="bi bi-eye-fill" aria-label="Mark as read"></i>
+                                        <i class="bi bi-eye-fill" title="Mark as read"></i>
                                     {% else %}
-                                        <i class="bi bi-eye-slash-fill" aria-label="Mark as unread"></i>
+                                        <i class="bi bi-eye-slash-fill" title="Mark as unread"></i>
                                     {% endif %}
                                 </button>
+                                <button class="btn btn-primary position-relative" id="record-{{record.id}}-view-json" data-bs-toggle="modal" data-bs-target="#record-{{record.id}}-json-modal">
+                                    <i class="bi bi-code-slash" title="View JSON"></i>
+                                    {% if record.has_unknown_fields %}
+                                        <span class="position-absolute top-0 start-100 translate-middle p-2 bg-danger border border-light rounded-circle">
+                                            <span class="visually-hidden">Has unknown fields</span>
+                                        </span>
+                                    {% endif %}
+                                </button>
+                                <div id="record-{{record.id}}-json-modal" class="modal fade" tabindex="-1" aria-labelledby="record-{{record.id}}-json-modal-label" aria-hidden="true">
+                                    <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered modal-xl">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="record-{{record.id}}-json-modal-label">Record {{record.id}}'s JSON</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <pre><code id="record-{{record.id}}-json">{{into_json(record.data)}}</code></pre>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                            </div>
+                                        </div>
+                                    </div>
                             </td>
                         </tr>
                     {% else %}

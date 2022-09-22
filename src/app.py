@@ -23,7 +23,12 @@ def before_request():
     # We will trust it directly if present -- if you are not using Cloudflare like this, this is a security risk!
     # If you are not using Cloudflare, you should remove this line.
     request.remote_addr = request.headers.get('CF-Connecting-IP', request.remote_addr) 
-    db.connect()
+
+    try:
+        db.connect()
+    except pw.OperationalError:
+        db.close()
+        db.connect()
     g.user = None
     if 'user_id' in session:
         g.user = User.get_or_none(User.id == session['user_id'])

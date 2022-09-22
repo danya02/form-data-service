@@ -63,10 +63,11 @@ def view(slug):
     add_member_form = AddMemberForm()
     remove_member_form = RemoveMemberForm()
     add_form_form = AddFormForm()
+    forms = Form.select().where(Form.project == project)
     return render_template('dashboard-project-view.html', project=project, name_edit_form=name_edit_form, description_edit_form=description_edit_form,
                            leave_form=leave_project_form, delete_form=delete_project_form,
                            add_member_form=add_member_form, remove_member_form=remove_member_form,
-                           project_members=project_members, add_form_form=add_form_form)
+                           project_members=project_members, add_form_form=add_form_form, forms=forms)
 
 
 @bp.route('/api/<slug>/edit-name', methods=['POST'])

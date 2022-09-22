@@ -194,7 +194,10 @@ class FormRecord(MyModel):
     # 'ip': The IP address of the user-agent that submitted the form. Null or not present if not stored.
     # 'headers': The headers of the user-agent that submitted the form. Null or not present if not stored.
 
-
+    @property
+    def has_unknown_fields(self):
+        """Whether the form has fields that are not in the form's field list."""
+        return any(field not in map(lambda x: x['name'], self.form.fields) for field in self.data)
 
 
 # At the very end of the file, reset the database connection.
