@@ -204,28 +204,60 @@
         </div>
     </div>
 
-    <div class="row mb-2">
-        <h1>{{forms|length}} forms</h1>
+    <h1>{{forms|length}} forms</h1>
+
+    <div class="row mb-2 g-4">
     
         {% for form in forms %}
-        <div class="card mb-2">
-            <div class="card-body">
-                <h5 class="card-title">{{form.name}}</h5>
-                <h6 class="card-subtitle mb-2 text-muted">{{form.slug}}</h6>
-                <p class="card-text">{{form.description}}</p>
-                <a href="{{ url_for('forms.view', slug=form.slug) }}" class="card-link stretched-link">View form</a>
+        <div class="col col-sm-12 col-md-4 col-lg-3">
+            <div class="card position-relative">
+                <div class="card-body">
+                    <h5 class="card-title">{{form.name}}</h5>
+                    <h6 class="card-subtitle mb-2 text-muted">{{form.slug}}</h6>
+                    <p class="card-text">{{form.fields | length}} fields, {{form.record_count}} total records</p>
+                    <a href="{{ url_for('forms.view', slug=form.slug) }}" class="btn btn-primary stretched-link">View form</a>
+                </div>
+                {% if form.unread_record_count %}
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary">
+                        {{form.unread_record_count}}
+                    <span class="visually-hidden">unread records</span>
+                </span>
+                {% endif %}
             </div>
         </div>
         {% endfor %}
 
-        <form action="{{ url_for('forms.api_create', project_slug=project.slug) }}" method="POST">
-            {{ add_form_form.csrf_token }}
-            <div class="input-group">
-                <button type="submit" class="btn btn-success">
-                    Add new form...
-                </button>
-            </div>
-        </form>
+        <div class="col col-sm-12 col-md-4 col-lg-3">
+            <form id="add-form-form" class="card text-center text-bg-secondary" action="{{ url_for('forms.api_create', project_slug=project.slug) }}" method="POST">
+                <div class="card-body">
+                    <h5 class="card-title">Create a new form</h5>
+
+                    <div class="card-text">
+                        <i class="bi bi-journal-plus fs-1"></i>
+                    </div>
+
+                    {{ add_form_form.csrf_token }}
+                    <noscript>
+                        <button type="submit" class="btn btn-success">
+                            Add new form...
+                        </button>
+                    </noscript>
+
+                    <script>
+                        var add_form_form = document.getElementById('add-form-form');
+                        var submit_link = document.createElement('a');
+                        submit_link.href = '#';
+                        submit_link.className = 'btn btn-success stretched-link';
+                        submit_link.innerHTML = 'Add new form...';
+                        submit_link.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            add_form_form.submit();
+                        });
+                        add_form_form.appendChild(submit_link);
+                    </script>
+                </div>
+            </form>
+        </div>
 
     </div>
 {% endblock %}
