@@ -52,8 +52,8 @@
                                 <p>Are you sure you want to delete this form?</p>
                                 <p>Here's what will happen:</p>
                                 <ul>
-                                    <li>Any HTML forms targeted at this form will stop working.</li>
-                                    <li>A total of 0 data records (including 0 unread ones) will be permanently deleted (make sure you exported any important data).</li>
+                                    <li>Any HTML or JavaScript forms targeted at this will <strong>stop working</strong> until the site is changed.</li>
+                                    <li>A total of {{form.record_count}} data records (including {{form.unread_record_count}} unread ones) will be permanently deleted (make sure you exported any important data).</li>
                                 </ul>
                                 <p>This action cannot be undone.</p>
                             </div>
@@ -451,6 +451,7 @@
                             if(request.status != 200){
                                 alert("Error: " + request.status + " " + request.responseText);
                             }
+                            // Set the button text and the row style to the state of the response 
                             if(request.responseText == "false"){
                                 button.innerHTML = `<i class="bi bi-eye-slash-fill" title="Mark as unread"></i>`;
                                 document.getElementById("record-" + button.dataset.recordId + "-row").classList.remove("table-primary");
@@ -458,9 +459,38 @@
                                 button.innerHTML = `<i class="bi bi-eye-fill" title="Mark as read"></i>`;
                                 document.getElementById("record-" + button.dataset.recordId + "-row").classList.add("table-primary");
                             }
+                            // Set the button to be a "warning" button for 1 second
+                            button.classList.remove("btn-outline-success");
+                            button.classList.add("btn-warning");
+                            setTimeout(function(){
+                                button.classList.remove("btn-warning");
+                                button.classList.add("btn-outline-success");
+                            }, 1000);
+
                         }
                         request.onerror = function() {
                             alert("Error: " + request.status + " " + request.responseText);
+                        }
+                        request.send();
+                    }
+
+                    function deleteRecord(button){
+                        button.innerText = 'Deleting...';
+                        delete_url = "{{url_for('forms.api_delete_record', slug=form.slug, record_id='RECORD_ID')}}".replace("RECORD_ID", button.dataset.recordId);
+                        var request = new XMLHttpRequest();
+                        request.open("POST", delete_url);
+                        request.setRequestHeader("Content-Type", "application/json");
+                        request.setRequestHeader("X-CSRFToken", "{{ csrf_token() }}");
+                        request.onload = function() {
+                            if(request.status != 200){
+                                alert("Error: " + request.status + " " + request.responseText);
+                            }
+                            // Remove the row from the table
+                            document.getElementById("record-" + button.dataset.recordId + "-row").remove();
+                        }
+                        request.onerror = function() {
+                            alert("Error: " + request.status + " " + request.responseText);
+                            button.innerText = 'Deleting failed!';
                         }
                         request.send();
                     }
@@ -502,6 +532,19 @@
                                         </span>
                                     {% endif %}
                                 </button>
+
+                                <button class="btn btn-outline-danger" id="record-{{record.id}}-delete-first-step" data-bs-toggle="collapse" data-bs-target="#record-{{record.id}}-delete-second-step" aria-expanded="false" aria-controls="record-{{record.id}}-delete-second-step">
+                                    <i class="bi bi-trash" title="Delete"></i>
+                                </button>
+
+                                <div>
+                                    <div class="collapse" id="record-{{record.id}}-delete-second-step">
+                                        <button class="btn btn-danger mx-1 my-1" id="record-{{record.id}}-delete-second-step-execute" onclick="deleteRecord(this); return false;" data-record-id="{{record.id}}">
+                                            Really delete?
+                                        </button>
+                                    </div>
+                                </div>
+
                                 <div id="record-{{record.id}}-json-modal" class="modal fade" tabindex="-1" aria-labelledby="record-{{record.id}}-json-modal-label" aria-hidden="true">
                                     <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered modal-xl">
                                         <div class="modal-content">
@@ -509,14 +552,25 @@
                                                 <h5 class="modal-title" id="record-{{record.id}}-json-modal-label">Record {{record.id}}'s JSON</h5>
                                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                             </div>
+
                                             <div class="modal-body">
                                                 <pre><code id="record-{{record.id}}-json">{{into_json(record.data)}}</code></pre>
                                             </div>
+
+                                            <div class="modal-header border-top">
+                                                <h5 class="modal-title" id="record-{{record.id}}-metadata-modal-label">Record Metadata</h5>
+                                            </div>
+
+                                            <div class="modal-body">
+                                                <pre><code id="record-{{record.id}}-json">{{into_json(record.metadata)}}</code></pre>
+                                            </div>
+
                                             <div class="modal-footer">
                                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                                             </div>
                                         </div>
                                     </div>
+                                </div>
                             </td>
                         </tr>
                     {% else %}
@@ -550,7 +604,29 @@ No HTML has been generated! Is JavaScript enabled?
 {% for field in form.fields %}    <input type="text" name="{{field['name']}}" placeholder="Value of {{field['name']}}" />
 {% endfor %}
     <input type="submit" value="Send form!" />
-</form>`;
+</form>
+
+<!-- Or, if you want to use JavaScript: -->
+` + '<' + 'script' + '>' + `
+    var data = {
+        {% for field in form.fields %}{{field['name'] | tojson}}: {{('Value of ' + field['name']) | tojson}},
+        {% endfor %}
+    };
+    var formdata = new FormData();
+    for (var key in data) {
+        formdata.append(key, data[key]);
+    }
+
+    var request = new XMLHttpRequest();
+    request.open("POST", "{{url_for('ingress.form_submit', slug=form.slug, _external=True)}}", true);
+    request.send(formdata);
+    
+    // Or, if you want to use fetch():
+    fetch("{{url_for('ingress.form_submit', slug=form.slug, _external=True)}}", {
+        method: "POST",
+        body: formdata,
+    });
+` + '</' + 'script' + '>';
                 document.getElementById("formHtmlContent").innerText = formHTML;
             </script>
 

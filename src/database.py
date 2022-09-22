@@ -181,6 +181,14 @@ class Form(MyModel):
         """
         return self.project.can_do(user, action)
 
+    @property
+    def record_count(self):
+        return FormRecord.select().where(FormRecord.form == self).count()
+
+    @property
+    def unread_record_count(self):
+        return FormRecord.select().where(FormRecord.form == self, FormRecord.unread == True).count()
+
 @create_table
 class FormRecord(MyModel):
     """

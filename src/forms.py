@@ -190,3 +190,20 @@ def api_toggle_view(slug, record_id):
     record.unread = not record.unread
     record.save()
     return 'true' if record.unread else 'false'
+
+@bp.route('/<slug>/api/delete_record/<record_id>', methods=['POST'])
+@require_login
+def api_delete_record(slug, record_id):
+    form = Form.get_or_none(Form.slug == slug)
+    if form is None:
+        return abort(404)
+    if not form.can_do(g.user, 'forms.edit'):
+        return abort(403)
+    record = FormRecord.get_or_none(FormRecord.id == record_id)
+    if record is None:
+        return abort(404)
+    if record.form != form:
+        return abort(403)
+    
+    record.delete_instance()
+    return 'ok'
