@@ -128,6 +128,17 @@ class Project(MyModel):
 
         return False, 'not_member'
 
+    @property
+    def member_count(self):
+        return ProjectUser.select().where(ProjectUser.project == self).count()
+    
+    @property
+    def form_count(self):
+        return Form.select().where(Form.project == self).count()
+    
+    @property
+    def total_record_count(self):
+        return FormRecord.select().join(Form).where(Form.project == self).count()
 
 
 @create_table

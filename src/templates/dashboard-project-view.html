@@ -92,9 +92,9 @@
                                 <p>Are you sure you want to delete this project?</p>
                                 <p>Here's what will happen:</p>
                                 <ul>
-                                    <li>All 0 forms associated with this project will stop working.</li>
-                                    <li>A total of 0 data records from 0 forms will be permanently deleted (make sure you exported any important data).</li>
-                                    <li>You and 0 project members will lose access to the project's data.</li>
+                                    <li>All {{project.forms_count}} forms associated with this project will stop working.</li>
+                                    <li>A total of {{project.total_record_count}} data records from {{project.forms_count}} forms will be permanently deleted (make sure you exported any important data).</li>
+                                    <li>You and {{project.member_count}} project members will lose access to the project's data.</li>
                                 </ul>
                                 <p>This action cannot be undone.</p>
                             </div>
@@ -218,7 +218,7 @@
                     <a href="{{ url_for('forms.view', slug=form.slug) }}" class="btn btn-primary stretched-link">View form</a>
                 </div>
                 {% if form.unread_record_count %}
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary">
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary fs-6">
                         {{form.unread_record_count}}
                     <span class="visually-hidden">unread records</span>
                 </span>
