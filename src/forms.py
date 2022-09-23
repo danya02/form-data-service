@@ -3,7 +3,7 @@ from flask import Blueprint, abort, g, redirect, url_for, flash, request, render
 from utils import require_login
 from database import *
 from flask_wtf import FlaskForm
-from wtforms import StringField, TextAreaField
+from wtforms import StringField, TextAreaField, BooleanField
 from wtforms.validators import DataRequired
 import json
 import io
@@ -18,6 +18,12 @@ class DeleteForm(FlaskForm):
     '''Not actually a form, only a CSRF token is included.'''
     pass
 
+class EditConfigForm(FlaskForm):
+    redirect = StringField('Redirect URL', validators=[], render_kw={'placeholder': 'https://example.com/success'})
+    store_only_fields = BooleanField('Store only listed fields?', validators=[])
+    store_ip = BooleanField('Store IP address?', validators=[])
+    store_headers = BooleanField('Store HTTP headers?', validators=[])
+
 @bp.route('/<slug>')
 @require_login
 def view(slug):
@@ -29,13 +35,15 @@ def view(slug):
 
     name_edit_form = NameEditForm(name=form.name)
     delete_form = DeleteForm()
+    edit_config_form = EditConfigForm(**form.config)
 
     # TODO: Pagination
     records_section = FormRecord.select().where(FormRecord.form == form).order_by(FormRecord.created_at.desc())
 
     return render_template('form-view.html', form=form, name_edit_form=name_edit_form,
                             delete_form=delete_form, records_section=records_section,
-                            into_json=lambda x: json.dumps(x, indent=4))
+                            into_json=lambda x: json.dumps(x, indent=4),
+                            update_config=edit_config_form)
 
 @bp.route('/<slug>/export.csv')
 @require_login
@@ -240,3 +248,31 @@ def api_delete_record(slug, record_id):
     )
     record.delete_instance()
     return 'ok'
+
+@bp.route('/<slug>/api/update_config', methods=['POST'])
+@require_login
+def api_update_config(slug):
+    form = Form.get_or_none(Form.slug == slug)
+    if form is None:
+        return abort(404)
+    if not form.can_do(g.user, 'forms.edit'):
+        return abort(403)
+    config_form = EditConfigForm()
+    if config_form.validate_on_submit():
+        form.config = {
+            'redirect': config_form.redirect.data or None,
+            'store_only_fields': bool(config_form.store_only_fields.data),
+            'store_ip': bool(config_form.store_ip.data),
+            'store_headers': bool(config_form.store_headers.data),
+        }
+        form.save()
+        AuditLogEntry.log('form_update_config',
+            form=form,
+            project=form.project,
+            data={'new_config': form.config}
+        )
+        flash('form-config-set', 'success')
+        return redirect(url_for('forms.view', slug=form.slug))
+    else:
+        flash('form-config-invalid', 'danger')
+        return redirect(url_for('forms.view', slug=form.slug))

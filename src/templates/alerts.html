@@ -89,6 +89,11 @@
             {% endif %}
         </em>
 
+    {% elif message == 'form-config-set' %}
+        Form configuration updated successfully.
+    {% elif message == 'form-config-invalid' %}
+        There was an error in the form configuration data. Most likely this is a bug in the application.
+
     {% else %}
         Unknown status: <code>{{message}}</code>
     {% endif %}

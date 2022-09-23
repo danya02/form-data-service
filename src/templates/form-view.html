@@ -424,6 +424,68 @@
     </div>
 
     <div class="row mb-2">
+        <div class="row">
+            <button type="button" class="btn btn-success" data-bs-toggle="collapse" data-bs-target="#formConfigCollapse">
+                Form settings...
+            </button>
+        </div>
+    </div>
+
+    <div class="row mb-2">
+        <div class="row">
+            <div class="collapse" id="formConfigCollapse">
+                <div class="card card-body">
+                    <form method="POST" action="{{url_for('forms.api_update_config', slug=form.slug)}}">
+                        {{ update_config.hidden_tag() }}
+                        <div class="row mb-1">
+                            <div class="col">
+                                <label for="redirect_url">After submission, redirect users to this URL:</label>
+                            </div>
+                            <div class="col">
+                                {{ update_config.redirect(class_="form-control") }}
+                            </div>
+                        </div>
+
+                        <div class="row mb-1">
+                            <div class="col">
+                                <label for="store_only_fields">Store only the data provided in the fields named by the config?</label>
+                            </div>
+                            <div class="col">
+                            {{ update_config.store_only_fields(class_="form-check-input") }}
+                            </div>
+                        </div>
+
+
+                        <div class="row mb-1">
+                            <div class="col">
+                                <label for="store_ip">Store users' IP addresses?</label>
+                            </div>
+                            <div class="col">
+                            {{ update_config.store_ip(class_="form-check-input") }}
+                            </div>
+                        </div>
+
+
+                        <div class="row mb-1">
+                            <div class="col">
+                                <label for="store_headers">Store users' request headers?</label>
+                            </div>
+                            <div class="col">
+                            {{ update_config.store_headers(class_="form-check-input") }}
+                            </div>
+                        </div>
+
+
+                        <div class="d-grid">
+                            <input type="submit" class="btn btn-warning" value="Save changes">
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-2">
         <div class="col">
             <h5>Records</h5>
             <table class="table table-striped table-hover">
