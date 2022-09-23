@@ -164,7 +164,7 @@
                         var formField = editedFormFields[this.dataset.index];
                         formField.name = this.value;
                     });
-                    formFieldNameInput.dataset.index = editedFormFields.length - 1;
+                    formFieldNameInput.dataset.index = i;
                     formFieldNameCell.appendChild(formFieldNameInput);
                     formFieldRow.appendChild(formFieldNameCell);
                     // Create required cell
@@ -176,7 +176,7 @@
                         var formField = editedFormFields[this.dataset.index];
                         formField.required = this.checked;
                     });
-                    formFieldRequiredInput.dataset.index = editedFormFields.length - 1;
+                    formFieldRequiredInput.dataset.index = i;
                     formFieldRequiredCell.appendChild(formFieldRequiredInput);
                     formFieldRow.appendChild(formFieldRequiredCell);
                     // Create delete cell
