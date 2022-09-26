@@ -105,11 +105,11 @@
 
             <script>
                 // Form config
-                var formConfig = JSON.parse(`{{ form.config|tojson }}`);
+                var formConfig = {{ form.config|tojson }};
 
                 // Form field data
-                var formFields = JSON.parse(`{{ form.fields|tojson }}`);
-                var editedFormFields = JSON.parse(`{{ form.fields|tojson }}`);
+                var formFields = {{ form.fields|tojson }};
+                var editedFormFields = {{ form.fields|tojson }};
                 // Initially the edited is identical, but we'll change it later
                 // We will later present a diff to the user.
                 
@@ -499,8 +499,8 @@
                     </tr>
                 </thead>
                 <script>
-                    var formFields = JSON.parse(`{{form.fields|tojson}}`);
-                    var formConfig = JSON.parse(`{{form.config|tojson}}`);
+                    var formFields = {{form.fields|tojson}};
+                    var formConfig = {{form.config|tojson}};
                     this.formRecords = [];
 
                     function readToggle(button){
@@ -564,8 +564,8 @@
                             this.formRecords.push({
                                 "id": "{{record.id}}",
                                 "ts": "{{record.created_at.timestamp()}}",
-                                "data": JSON.parse(`{{record.data|tojson}}`),
-                                "metadata": JSON.parse(`{{record.metadata|tojson}}`),
+                                "data": {{record.data|tojson}},
+                                "metadata": {{record.metadata|tojson}},
                                 "unread": Number.parseInt("{{'1' if record.unread==True else '0'}}"),
                             });
                         </script>
