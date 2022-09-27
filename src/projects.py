@@ -34,7 +34,6 @@ def create():
             project=project
         )
         return redirect(url_for('projects.view', slug=project.slug))
-        return redirect(url_for('projects.view', slug=project.slug))
 
 class NameEditForm(FlaskForm):
     name = StringField('Name', validators=[DataRequired()])
