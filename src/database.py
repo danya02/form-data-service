@@ -100,10 +100,28 @@ class User(MyModel):
         totp = pyotp.TOTP(self.totp_secret)
         self.totp_last_attempt_epoch = current_epoch
         self.save()
-        if totp.verify(code, valid_window=2):
-            return True, 'totp-code-ok'
-        else:
-            return False, 'totp-code-invalid'
+
+        if len(code) == 6:
+            if totp.verify(code, valid_window=2):
+                return True, 'totp-code-ok'
+            else:
+                return False, 'totp-code-invalid'
+        else:  # User used a recovery code
+            # Using a branchless algorithm here to avoid timing attacks
+            ok = False
+            codes = self.totp_recovery_codes.split(' ')
+            for i, c in enumerate(codes):
+                if c == code:
+                    ok = True
+                    codes[i] = '!' + c
+            
+            self.totp_recovery_codes = ' '.join(codes)
+            if ok:
+                self.save()
+                return True, 'totp-recovery-code-ok'
+            else:
+                return False, 'totp-recovery-code-invalid'
+
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

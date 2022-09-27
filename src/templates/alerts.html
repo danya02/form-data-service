@@ -43,6 +43,8 @@
     {# BEGIN login alerts #}
     {% elif message == 'login-error-email' %}
         Invalid email or password.
+    {% elif message == 'login-error' %}
+        Invalid email or password.
     {% elif message == 'login-error-bug' %}
         Encountered an unexpected state in the login system. Your login process was reset, please try again.
     {% elif message == 'requires-login' %}
@@ -83,11 +85,18 @@
         You should consider changing it here on <a class="alert-link" href="{{ url_for('login.change_password') }}">the change password page</a>, as well as on any other site you've used it.
         <em>
             {% if g.user.pwned_login_count == 0 %}
-            This is the last time you will see this reminder.
+            This is <strong>the last time you will see this reminder</strong>.
             {% else %}
             You will see this reminder {{ g.user.pwned_login_count }} more time{{ 's' if g.user.pwned_login_count > 1 else '' }}.
             {% endif %}
         </em>
+
+    {% elif message == 'totp-code-invalid' %}
+        Could not complete login because the TOTP code you entered was invalid.
+    {% elif message == 'totp-totp-recovery-code-ok' %}
+        Logged in successfully using a TOTP recovery code. This code no longer works.
+        Please review your <a class="alert-link" href="{{ url_for('login.totp_recovery_codes') }}">TOTP recovery codes</a>.
+
 
     {% elif message == 'form-config-set' %}
         Form configuration updated successfully.

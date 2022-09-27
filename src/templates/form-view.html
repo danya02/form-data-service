@@ -570,7 +570,7 @@
                             });
                         </script>
                         <tr id="record-{{record.id}}-row" class="{% if record.unread %}table-primary{% endif %}">
-                            <td id="record-{{record.id}}-date">{{record.created_at.strftime('%Y-%m-%d %H:%M:%S')}}</td>
+                            <td id="record-{{record.id}}-date">{{record.created_at.strftime('%Y-%m-%d %H:%M:%S')}} (server time)</td>
                             <script>document.getElementById("record-{{record.id}}-date").innerText = new Date(this.formRecords[this.formRecords.length - 1].ts * 1000).toLocaleString();</script>
                             {% for field in form.fields %}
                                 {% if field['name'] in record.data and record.data.get(field['name'])!=None %}

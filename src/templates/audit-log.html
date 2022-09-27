@@ -28,7 +28,12 @@
             <tbody>
                 {% for entry in entries %}
                 <tr>
-                    <td>{{ entry.when.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                    <td id="entry-{{entry.id}}-time">{{ entry.when.strftime('%Y-%m-%d %H:%M:%S') }} (server time)</td>
+                    <script>
+                        var time_cell = document.getElementById('entry-{{entry.id}}-time');
+                        var time = new Date("{{1000*entry.when.timestamp()}}");
+                        time_cell.innerHTML = time.toLocaleString();
+                    </script>
                     <td>{{ entry.ip_address }}</td>
                     <td>
                         {% if entry.action == 'user_login_full' %}
@@ -73,6 +78,8 @@
                             Form record deleted
                         {% elif entry.action == 'form_export_csv' %}
                             Form data exported as CSV
+                        {% elif entry.action == 'form_update_config' %}
+                            Form's config updated
                         {% else %}
                             Unknown action: <code>{{entry.action}}</code>
                         {% endif %}
@@ -86,7 +93,7 @@
                         {% endif %}
                     </td>
                     <td>
-                        {% if entry.project %}
+                        {% if entry.form %}
                             <a href="{{url_for('forms.view', slug=entry.form.slug)}}">{{ entry.form.title }}</a>
                         {% else %}
                             {{ utils.no_data() }}
